@@ -122,9 +122,28 @@ Estas son las decisiones que se tomaron al empezar la construcción.
 
 ## ADR-11: Las calificaciones entran por reservas-service
 
-- **Estado:** Propuesta (se implementa con reservas).
+- **Estado:** Aceptada.
 - **Contexto:** RF076 exige que solo califique quien tenga una reserva COMPLETADA. Ese dato vive en
   reservas, y reservas ya depende de oferta: si oferta le preguntara a reservas se formaría un ciclo.
-- **Decisión:** El turista califica a través de reservas-service, que comprueba la reserva y luego
-  registra la calificación en oferta (`POST /internal/calificaciones`). Oferta guarda la calificación
-  y recalcula el promedio (RF080). Así la dependencia sigue yendo de reservas hacia oferta.
+- **Decisión:** El turista califica con `POST /api/reservas/{id}/calificacion`. Reservas comprueba que
+  la reserva es suya, está COMPLETADA y no está calificada, y luego la registra en oferta
+  (`POST /internal/calificaciones`) **fuera de su transacción** (ADR-12). Oferta guarda la calificación y
+  recalcula el promedio (RF080). Reservas guarda una copia de la puntuación para mostrarla en
+  "Mis reservas". La dependencia sigue yendo de reservas hacia oferta.
+  - **Sin transacción distribuida:** oferta es **idempotente por reserva** (`id_reserva` UNIQUE). Si ya
+    tiene la calificación de esa reserva, devuelve la existente (200 en vez de 201) y no la cuenta otra vez.
+    Si oferta no responde a tiempo, reservas responde 503 sin marcar la reserva. Un timeout **no**
+    significa que oferta no la recibió: puede guardarla después. Por eso reintentar es seguro: si oferta
+    ya la tenía, reservas repara su copia con la puntuación original y responde 409 ("ya había quedado
+    registrada con N estrellas"). Lo mismo pasa si reservas se cae justo después de que oferta guardó.
+  - **Promedio sin carreras:** antes de registrar, oferta bloquea la fila del servicio (`SELECT ... FOR
+    UPDATE`). Las calificaciones de un mismo servicio se registran una tras otra, la comprobación de
+    duplicado no tiene carrera y el promedio se recalcula desde todas las calificaciones guardadas
+    (`round(avg(puntuacion), 1)`), no sumando sobre el valor anterior.
+- **Consecuencia:** Verificado en Docker (`pruebas/e2e-calificaciones.sh`). 8 calificaciones simultáneas
+  dieron el promedio exacto; 5 envíos simultáneos de la misma reserva dieron un 201 y cuatro 409. Con
+  oferta congelado, reservas respondió 503; al descongelarlo, oferta procesó la petición que tenía en
+  cola, y el reintento la encontró, reparó la copia y no la contó dos veces. En toda la base, el total y el
+  promedio de cada servicio coinciden con sus calificaciones. El bloqueo solo serializa calificaciones
+  del **mismo** servicio, que son pocas por minuto. Las reseñas son públicas con el autor abreviado
+  ("Ana T."), y el prestador responde en público (RF030).

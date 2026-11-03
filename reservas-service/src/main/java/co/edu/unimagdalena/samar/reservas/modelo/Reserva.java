@@ -41,6 +41,12 @@ public class Reserva {
 
   private String motivo;
 
+  /** Copia de la puntuación registrada en oferta (ADR-11). Nula mientras no se califique. */
+  private Short calificacion;
+
+  @Column(name = "calificada_en")
+  private Instant calificadaEn;
+
   @Column(name = "creado_en", nullable = false, updatable = false)
   private Instant creadoEn = Instant.now();
 
@@ -117,6 +123,20 @@ public class Reserva {
     return detalles.stream().anyMatch(d -> d.getIdPrestador().equals(prestadorId));
   }
 
+  /** RF076: solo una reserva COMPLETADA se califica, y una sola vez. */
+  public boolean puedeCalificarse() {
+    return estado == EstadoReserva.COMPLETADA && calificacion == null;
+  }
+
+  /** @throws IllegalStateException si no se puede calificar (la capa servicio valida antes) */
+  public void registrarCalificacion(int puntuacion, Instant ahora) {
+    if (!puedeCalificarse()) {
+      throw new IllegalStateException("La reserva " + id + " no se puede calificar en estado " + estado);
+    }
+    this.calificacion = (short) puntuacion;
+    this.calificadaEn = ahora;
+  }
+
   public void setMotivo(String motivo) { this.motivo = motivo; }
 
   public Long getId() { return id; }
@@ -127,6 +147,8 @@ public class Reserva {
   public String getMoneda() { return moneda; }
   public int getPersonas() { return personas; }
   public String getMotivo() { return motivo; }
+  public Integer getCalificacion() { return calificacion == null ? null : calificacion.intValue(); }
+  public Instant getCalificadaEn() { return calificadaEn; }
   public Instant getCreadoEn() { return creadoEn; }
   public List<DetalleReserva> getDetalles() { return Collections.unmodifiableList(detalles); }
   public List<Pago> getPagos() { return Collections.unmodifiableList(pagos); }

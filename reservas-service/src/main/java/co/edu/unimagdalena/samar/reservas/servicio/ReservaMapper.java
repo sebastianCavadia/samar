@@ -20,7 +20,7 @@ final class ReservaMapper {
         d.getTipoServicio(), d.getIdPrestador(), r.getIdTurista(), r.getNombreTurista(), disp.getFecha(),
         disp.getHora(), r.getPersonas(), d.getCantidad(), d.getPrecioUnitario(), r.getTotal(), r.getMoneda(),
         r.getMotivo(), r.getCreadoEn(), esperandoPago ? r.getCreadoEn().plus(plazoPago) : null,
-        pago == null ? null : aPago(pago),
+        r.getCalificacion(), r.puedeCalificarse(), pago == null ? null : aPago(pago),
         r.getHistorial().stream().map(ReservaMapper::aEvento).toList());
   }
 

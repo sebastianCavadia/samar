@@ -1,5 +1,6 @@
 package co.edu.unimagdalena.samar.reservas.presentacion;
 
+import co.edu.unimagdalena.samar.reservas.servicio.CalificacionReservaService;
 import co.edu.unimagdalena.samar.reservas.servicio.ReservaService;
 import co.edu.unimagdalena.samar.reservas.servicio.dto.Identidad;
 import co.edu.unimagdalena.samar.reservas.servicio.dto.Respuestas;
@@ -16,9 +17,11 @@ import java.util.List;
 public class ReservaController {
 
   private final ReservaService reservas;
+  private final CalificacionReservaService calificaciones;
 
-  public ReservaController(ReservaService reservas) {
+  public ReservaController(ReservaService reservas, CalificacionReservaService calificaciones) {
     this.reservas = reservas;
+    this.calificaciones = calificaciones;
   }
 
   @PostMapping
@@ -46,5 +49,13 @@ public class ReservaController {
   @PostMapping("/{id}/cancelar")
   public Respuestas.Reserva cancelar(Identidad actor, @PathVariable Long id, @Valid @RequestBody Solicitudes.Motivo req) {
     return reservas.cancelar(actor, id, req.motivo());
+  }
+
+  /** RF075 y RF076: solo el turista, con la reserva COMPLETADA y una sola vez (ADR-11). */
+  @PostMapping("/{id}/calificacion")
+  @ResponseStatus(HttpStatus.CREATED)
+  public Respuestas.Reserva calificar(Identidad actor, @PathVariable Long id,
+      @Valid @RequestBody Solicitudes.Calificar req) {
+    return calificaciones.calificar(actor, id, req);
   }
 }

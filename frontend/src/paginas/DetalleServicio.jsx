@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
   Accessibility, ArrowLeft, BedDouble, CalendarCheck, Check, ChefHat, ChevronRight, Clock,
-  ExternalLink, Gauge, Leaf, MapPin, MessageSquareText, Salad, ShieldCheck, Sparkles, Store, Timer,
+  ExternalLink, Gauge, Leaf, MapPin, Salad, ShieldCheck, Sparkles, Store, Timer,
   TriangleAlert, UserRound, Users,
 } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
 import Calificacion from '../componentes/Calificacion'
 import PanelReserva from '../componentes/PanelReserva'
+import Resenas from '../componentes/Resenas'
 import { CATEGORIAS, DIETAS, DIFICULTADES, TIPOS, hora } from '../formato'
 import { ICONO_CATEGORIA, ICONO_TIPO } from '../iconos'
 
@@ -125,7 +126,9 @@ export default function DetalleServicio({ id, volver, usuario, alIrALogin, alRes
                   {s.nuevo && <span className="insignia nuevo"><Sparkles size={12} aria-hidden="true" /> Nuevo</span>}
                 </div>
                 <h1>{s.nombre}</h1>
-                <Calificacion promedio={s.calificacionPromedio} total={s.totalCalificaciones} />
+                {s.totalCalificaciones > 0
+                  ? <a className="enlace-calificacion" href="#resenas"><Calificacion promedio={s.calificacionPromedio} total={s.totalCalificaciones} /></a>
+                  : <Calificacion promedio={s.calificacionPromedio} total={s.totalCalificaciones} />}
               </div>
 
               <div className="fila-caracteristicas">
@@ -174,17 +177,9 @@ export default function DetalleServicio({ id, volver, usuario, alIrALogin, alRes
                 </div>
               </section>
 
-              <section className="seccion-detalle">
-                <h2>Reseñas</h2>
-                {s.totalCalificaciones > 0
-                  ? <Calificacion promedio={s.calificacionPromedio} total={s.totalCalificaciones} />
-                  : (
-                    <div className="vacio" style={{ padding: '24px 16px' }}>
-                      <div className="icono-vacio"><MessageSquareText size={26} aria-hidden="true" /></div>
-                      <h3>Aún no hay reseñas</h3>
-                      <p className="pequeno">Solo pueden opinar turistas con una reserva completada de este servicio.</p>
-                    </div>
-                  )}
+              <section className="seccion-detalle" id="resenas" aria-labelledby="titulo-resenas">
+                <h2 id="titulo-resenas">Reseñas</h2>
+                <Resenas idServicio={s.id} />
               </section>
             </div>
 

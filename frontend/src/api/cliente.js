@@ -79,6 +79,12 @@ export const ofertaApi = {
   editar: (id, datos) => api(`/api/oferta/prestador/servicios/${id}`, { metodo: 'PUT', cuerpo: datos }),
   cambiarEstado: (id, activo) =>
     api(`/api/oferta/prestador/servicios/${id}/estado`, { metodo: 'PATCH', cuerpo: { activo } }),
+
+  // Reseñas: públicas (RF080, RF081) y las que recibe el prestador (RF030)
+  calificaciones: (id, filtros) => api(`/api/oferta/servicios/${id}/calificaciones?${aQuery(filtros)}`),
+  resenasRecibidas: (filtros) => api(`/api/oferta/prestador/calificaciones?${aQuery(filtros)}`),
+  responder: (idCalificacion, respuesta) =>
+    api(`/api/oferta/prestador/calificaciones/${idCalificacion}/respuesta`, { metodo: 'PUT', cuerpo: { respuesta } }),
 }
 
 export const reservasApi = {
@@ -89,6 +95,9 @@ export const reservasApi = {
   mis: () => api('/api/reservas/mis'),
   pagar: (id, medio, referencia) => api(`/api/reservas/${id}/pagos`, { metodo: 'POST', cuerpo: { medio, referencia } }),
   cancelar: (id, motivo) => api(`/api/reservas/${id}/cancelar`, { metodo: 'POST', cuerpo: { motivo } }),
+  // RF075/RF076: se califica a través de reservas, que comprueba que esté COMPLETADA (ADR-11)
+  calificar: (id, puntuacion, comentario) =>
+    api(`/api/reservas/${id}/calificacion`, { metodo: 'POST', cuerpo: { puntuacion, comentario } }),
 
   // Prestador
   recibidas: (estado) => api(`/api/reservas/prestador/reservas?${aQuery({ estado })}`),

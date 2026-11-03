@@ -53,6 +53,8 @@ public final class Respuestas {
       String motivo,
       Instant creadoEn,
       Instant expiraEn,
+      Integer calificacion,
+      boolean puedeCalificar,
       PagoInfo pago,
       List<EventoBitacora> historial) {
   }

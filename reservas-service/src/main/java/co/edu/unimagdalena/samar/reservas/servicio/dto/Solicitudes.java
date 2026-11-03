@@ -30,6 +30,10 @@ public final class Solicitudes {
   public record ValidarPago(@NotNull Boolean aprobado) {
   }
 
+  /** RF075: de 1 a 5 estrellas; la reseña es opcional. */
+  public record Calificar(@NotNull @Min(1) @Max(5) Integer puntuacion, @Size(max = 1000) String comentario) {
+  }
+
   /**
    * RF018: abre (o actualiza) cupos para un rango de fechas.
    * @param hora        opcional: actividades con horario fijo; vacío = todo el día

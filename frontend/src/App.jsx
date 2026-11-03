@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  CalendarCheck, Compass, Contrast, Inbox, LayoutDashboard, LogIn, LogOut, Menu, Moon, ShieldCheck, UserPlus, UserRound, X,
+  CalendarCheck, Compass, Contrast, Inbox, LayoutDashboard, LogIn, LogOut, Menu, MessageSquareText, Moon, ShieldCheck, UserPlus,
+  UserRound, X,
 } from 'lucide-react'
-import { adminApi, cuentasApi, guardarToken } from './api/cliente'
+import { adminApi, cuentasApi, guardarToken, ofertaApi } from './api/cliente'
 import { guardarApariencia, leerApariencia } from './apariencia'
 import Logo from './componentes/Logo'
 import Toast from './componentes/Toast'
@@ -12,6 +13,7 @@ import Login from './paginas/Login'
 import MisReservas from './paginas/MisReservas'
 import MisServicios from './paginas/MisServicios'
 import Perfil from './paginas/Perfil'
+import ResenasRecibidas from './paginas/ResenasRecibidas'
 import RegistroPrestador from './paginas/RegistroPrestador'
 import RegistroTurista from './paginas/RegistroTurista'
 import ReservasRecibidas from './paginas/ReservasRecibidas'
@@ -26,6 +28,7 @@ export default function App() {
   const [servicioAbierto, setServicioAbierto] = useState(null)
   const [reservaNueva, setReservaNueva] = useState(null)
   const [pendientesAdmin, setPendientesAdmin] = useState(0)
+  const [resenasSinResponder, setResenasSinResponder] = useState(0)
   const [toast, setToast] = useState(null)
   const cerrarToast = useCallback(() => setToast(null), [])
 
@@ -38,6 +41,12 @@ export default function App() {
   useEffect(() => {
     if (usuario?.rol !== 'ADMINISTRADOR') return
     adminApi.resumen().then((r) => setPendientesAdmin(r.prestadoresPendientes)).catch(() => {})
+  }, [usuario])
+
+  // RF030: al prestador se le avisa cuántas reseñas esperan su respuesta.
+  useEffect(() => {
+    if (usuario?.rol !== 'PRESTADOR') return
+    ofertaApi.resenasRecibidas({ sinResponder: true }).then((r) => setResenasSinResponder(r.sinResponder)).catch(() => {})
   }, [usuario])
 
   function cambiarApariencia(cambio) {
@@ -84,6 +93,7 @@ export default function App() {
     usuario?.rol === 'TURISTA' && { id: 'mis-reservas', texto: 'Mis reservas', Icono: CalendarCheck },
     usuario?.rol === 'PRESTADOR' && { id: 'mis-servicios', texto: 'Mis servicios', Icono: LayoutDashboard },
     usuario?.rol === 'PRESTADOR' && { id: 'reservas-recibidas', texto: 'Reservas', Icono: Inbox },
+    usuario?.rol === 'PRESTADOR' && { id: 'resenas', texto: 'Reseñas', Icono: MessageSquareText, conteo: resenasSinResponder },
     // RF096: el contador avisa al administrador que hay prestadores esperando validación.
     usuario?.rol === 'ADMINISTRADOR' && { id: 'admin', texto: 'Administración', Icono: ShieldCheck, conteo: pendientesAdmin },
   ].filter(Boolean)
@@ -176,6 +186,7 @@ export default function App() {
         {vista === 'mis-reservas' && usuario && <MisReservas resaltar={reservaNueva} />}
         {vista === 'mis-servicios' && usuario && <MisServicios usuario={usuario} />}
         {vista === 'reservas-recibidas' && usuario && <ReservasRecibidas />}
+        {vista === 'resenas' && usuario && <ResenasRecibidas alCambiarPendientes={setResenasSinResponder} />}
         {vista === 'perfil' && usuario && <Perfil usuario={usuario} />}
         {vista === 'admin' && usuario && <PanelAdmin usuario={usuario} alCambiarPendientes={setPendientesAdmin} />}
         {vista === 'login' && !usuario && (

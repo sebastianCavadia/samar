@@ -35,4 +35,20 @@ public interface ServicioTuristicoRepository
   @Query(value = "UPDATE servicio_turistico SET prestador_suspendido = FALSE WHERE prestador_suspendido",
       nativeQuery = true)
   int reactivarTodos();
+
+  /**
+   * Bloquea la fila del servicio hasta el fin de la transacción. Las calificaciones de un mismo
+   * servicio se registran una tras otra, así el recálculo del promedio ve todas las anteriores.
+   */
+  @Query(value = "SELECT id FROM servicio_turistico WHERE id = :id FOR UPDATE", nativeQuery = true)
+  Optional<Long> bloquearParaCalificar(@Param("id") Long id);
+
+  /** RF080: promedio y total desde todas las calificaciones guardadas, no sumando sobre el valor anterior. */
+  @Modifying(flushAutomatically = true)
+  @Query(value = """
+      UPDATE servicio_turistico s
+         SET total_calificaciones  = (SELECT count(*) FROM calificacion c WHERE c.id_servicio = s.id),
+             calificacion_promedio = (SELECT round(avg(c.puntuacion), 1) FROM calificacion c WHERE c.id_servicio = s.id)
+       WHERE s.id = :id""", nativeQuery = true)
+  int recalcularCalificacion(@Param("id") Long id);
 }

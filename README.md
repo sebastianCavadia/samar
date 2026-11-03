@@ -92,15 +92,15 @@ curl localhost:8080/api/cuentas/perfil -H "Authorization: Bearer <token>"
 | Panel del administrador: validar o rechazar prestadores con motivo (RF095, RF096), buscar usuarios (RF091), ficha (RF092), activar/desactivar/bloquear con motivo y correo (RF093, RF100), editar datos (RF094), crear administradores con área (RF099), bitácora (RF097). Las ofertas de un prestador desactivado salen del catálogo (ADR-13) | Listo, probado en Docker (`pruebas/e2e-admin.sh`) |
 | oferta-service: registrar/editar servicios (RF016, RF017, RF023-026), activar/desactivar (RF032), catálogo con búsqueda, filtros y paginación (RF073, RF074, RF077, RF082), solo prestadores validados publican (RF085) | Listo |
 | reservas-service: cupos por fecha (RF018, RF034, RF035), reservar con precio fijado y validaciones (RF036, RF047, RF064-RF066), pago simulado o con comprobante (RF043, RF044, RF055), confirmar/rechazar/cancelar con reembolso (RF038, RF040, RF045), expiración y completado automáticos (RF049, RF056), bitácora (RF057) | Listo, probado en Docker (`pruebas/e2e-reservas.sh`) |
+| Calificaciones: de 1 a 5 estrellas con reseña solo con reserva COMPLETADA y una vez por reserva (RF075, RF076), promedio recalculado (RF080), reseñas públicas filtrables por estrellas (RF081), respuesta pública del prestador (RF030). Entran por reservas y se guardan en oferta (ADR-11) | Listo, probado en Docker (`pruebas/e2e-calificaciones.sh`) |
 | recomendaciones: capas, esquema Flyway, regla de capas | Esqueleto, falta la lógica |
-| frontend: login, registro de turista y de negocio, catálogo y detalle, reservar y "Mis reservas", panel del prestador (servicios, fechas y cupos, reservas recibidas), panel del administrador | Listo para estos casos de uso |
+| frontend: login, registro de turista y de negocio, catálogo y detalle con reseñas, reservar, "Mis reservas" y calificar, panel del prestador (servicios, fechas y cupos, reservas recibidas, reseñas), panel del administrador | Listo para estos casos de uso |
 
 Pendiente en administración: moderar fotos o contenido de un servicio (RF094, segunda parte), preguntas
 frecuentes (RF098), PQRS (RF015, pendiente de decidir si entra) e invalidar tokens al desactivar (RF012).
 
 Pendiente en oferta: subida de archivos de imagen (RF019; hoy se registran URLs con texto alternativo),
-tarifas por temporada (RF027), parqueo (RF028), vista previa (RF029), SEO (RF031), certificaciones (RF033)
-y calificaciones (RF075/RF076, que dependen de reservas COMPLETADAS, ver ADR-11).
+tarifas por temporada (RF027), parqueo (RF028), vista previa (RF029), SEO (RF031) y certificaciones (RF033).
 
 ### API de oferta-service
 
@@ -112,7 +112,11 @@ y calificaciones (RF075/RF076, que dependen de reservas COMPLETADAS, ver ADR-11)
 | `PUT /api/oferta/prestador/servicios/{id}` | Dueño | Editar (el tipo no cambia) |
 | `PATCH /api/oferta/prestador/servicios/{id}/estado` | Dueño | `{"activo": false}` lo saca del catálogo sin borrarlo |
 | `GET /api/oferta/prestador/servicios[/{id}]` | Prestador | Sus servicios, incluidos los inactivos |
+| `GET /api/oferta/servicios/{id}/calificaciones?estrellas&pagina` | Público | Promedio, cuántas hay de cada puntuación y reseñas de 5 en 5 (RF080, RF081) |
+| `GET /api/oferta/prestador/calificaciones?sinResponder&pagina` | Prestador | Reseñas de todos sus servicios y cuántas faltan por responder |
+| `PUT /api/oferta/prestador/calificaciones/{id}/respuesta` `{respuesta}` | Dueño del servicio | Respuesta pública a una reseña (RF030) |
 | `GET /internal/servicios/{id}` | Solo red interna | Precio, dueño, modalidad, capacidad y edad mínima para reservas-service |
+| `POST /internal/calificaciones` | Solo red interna | Registra la calificación que envía reservas; idempotente por reserva (ADR-11) |
 
 ### API de reservas-service
 
@@ -122,6 +126,7 @@ y calificaciones (RF075/RF076, que dependen de reservas COMPLETADAS, ver ADR-11)
 | `POST /api/reservas` `{idDisponibilidad, personas}` | Turista | Crea la reserva PENDIENTE y ocupa cupos (atómico, sin overbooking) |
 | `POST /api/reservas/{id}/pagos` `{medio: PASARELA\|COMPROBANTE, referencia}` | Turista dueño | Pago simulado (aprobado al instante) o comprobante para revisión |
 | `POST /api/reservas/{id}/cancelar` `{motivo}` | Turista o prestador | Libera cupos y reembolsa si estaba pagada |
+| `POST /api/reservas/{id}/calificacion` `{puntuacion, comentario}` | Turista dueño | Califica una reserva COMPLETADA, una sola vez (RF075, RF076) |
 | `GET /api/reservas/mis` · `GET /api/reservas/{id}` | Turista / partes | Historial con estado, pago y bitácora |
 | `GET /api/reservas/prestador/reservas?estado` | Prestador | Reservas recibidas |
 | `POST /api/reservas/prestador/reservas/{id}/confirmar` · `/rechazar` · `/pago {aprobado}` | Prestador dueño | Confirmar (solo con pago aprobado), rechazar, revisar comprobante |
@@ -156,6 +161,16 @@ Prueba el panel del administrador: validar y rechazar prestadores, buscar, bloqu
 cuentas, editar, crear administradores y la bitácora. Al final desactiva a un prestador y comprueba
 que sus servicios salen del catálogo y vuelven al reactivarlo (ADR-13). Para que no tarde hasta un
 minuto en verse: `SINCRONIZACION_MS=5000 docker compose up -d oferta-service`.
+
+```bash
+bash pruebas/e2e-calificaciones.sh
+```
+
+Prueba las calificaciones: solo con la reserva COMPLETADA y una vez, permisos, 8 calificaciones
+simultáneas del mismo servicio (el promedio debe dar exacto), 5 envíos simultáneos de la misma
+reserva (debe contar una sola), filtro por estrellas, respuesta del prestador, oferta caído y la
+reparación de la copia local (ADR-11). Para que las reservas se completen rápido:
+`TAREA_MS=5000 docker compose up -d reservas-service`.
 
 Cuentas de demo (clave `ClaveSegura1`): turista `ana@demo.co`, prestador validado `tours@demo.co`,
 prestador sin validar `hostal@demo.co`. Administrador: `admin@samar.co` / `Admin12345`.

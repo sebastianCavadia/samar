@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarCheck, CreditCard, Landmark, TriangleAlert, X } from 'lucide-react'
+import { CalendarCheck, CreditCard, Landmark, Send, Star, TriangleAlert, X } from 'lucide-react'
 import { reservasApi } from '../api/cliente'
+import { Estrellas, SelectorEstrellas } from '../componentes/Estrellas'
 import TarjetaReserva from '../componentes/TarjetaReserva'
 import Toast from '../componentes/Toast'
-import { MOTIVOS_TURISTA, hoyIso } from '../formato'
+import { MOTIVOS_TURISTA, TEXTO_ESTRELLAS, hoyIso } from '../formato'
 
 // RF041: historial clasificado
 const PESTANAS = [
@@ -13,10 +14,12 @@ const PESTANAS = [
   { id: 'rechazadas', texto: 'Rechazadas', incluye: ['RECHAZADA'] },
 ]
 
-function AccionesTurista({ reserva: r, alActualizar, alError }) {
-  const [modo, setModo] = useState(null) // null | 'transferencia' | 'cancelar'
+function AccionesTurista({ reserva: r, alActualizar, alError, alRecargar }) {
+  const [modo, setModo] = useState(null) // null | 'transferencia' | 'cancelar' | 'calificar'
   const [referencia, setReferencia] = useState('')
   const [motivo, setMotivo] = useState(MOTIVOS_TURISTA[0])
+  const [puntuacion, setPuntuacion] = useState(0)
+  const [comentario, setComentario] = useState('')
   const [enviando, setEnviando] = useState(false)
 
   async function ejecutar(accion, mensaje) {
@@ -26,9 +29,43 @@ function AccionesTurista({ reserva: r, alActualizar, alError }) {
       setModo(null)
     } catch (e) {
       alError(e.message)
+      // RF076: si ya estaba calificada (p. ej. desde otra pestaña), se recarga para mostrar la que quedó.
+      if (modo === 'calificar') alRecargar()
     } finally {
       setEnviando(false)
     }
+  }
+
+  if (r.calificacion) {
+    return (
+      <span className="tu-calificacion">
+        Tu calificación: <Estrellas valor={r.calificacion} /> <strong>{TEXTO_ESTRELLAS[r.calificacion]}</strong>
+      </span>
+    )
+  }
+
+  if (modo === 'calificar') {
+    return (
+      <form className="formulario-calificar" onSubmit={(e) => {
+        e.preventDefault()
+        ejecutar(() => reservasApi.calificar(r.id, puntuacion, comentario), '¡Gracias! Tu reseña ya es pública')
+      }}>
+        <SelectorEstrellas valor={puntuacion} alCambiar={setPuntuacion} nombre={`estrellas-${r.id}`} />
+        <label className="campo">
+          <span>Cuéntales a otros viajeros <span className="ayuda">(opcional)</span></span>
+          <textarea className="control" rows={3} maxLength={1000} value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            placeholder="¿Qué te gustó? ¿Qué se podría mejorar?" />
+          <span className="ayuda">Se publica con tu nombre y la inicial de tu apellido. Solo se califica una vez.</span>
+        </label>
+        <div className="fila-botones">
+          <button className="btn btn-primario" disabled={enviando || puntuacion === 0}>
+            <Send size={16} aria-hidden="true" /> Publicar reseña
+          </button>
+          <button type="button" className="btn btn-fantasma" onClick={() => setModo(null)}>Volver</button>
+        </div>
+      </form>
+    )
   }
 
   const puedePagar = r.estado === 'PENDIENTE' && (!r.pago || r.pago.estado === 'RECHAZADO')
@@ -82,6 +119,11 @@ function AccionesTurista({ reserva: r, alActualizar, alError }) {
       {puedeCancelar && (
         <button className="btn btn-fantasma" onClick={() => setModo('cancelar')}><X size={16} aria-hidden="true" /> Cancelar reserva</button>
       )}
+      {r.puedeCalificar && (
+        <button className="btn btn-primario" onClick={() => setModo('calificar')}>
+          <Star size={16} aria-hidden="true" /> Calificar experiencia
+        </button>
+      )}
     </>
   )
 }
@@ -108,13 +150,14 @@ export default function MisReservas({ resaltar }) {
   const conteo = (p) => reservas?.filter((r) => p.incluye.includes(r.estado)).length ?? 0
   const actual = PESTANAS.find((p) => p.id === pestana)
   const visibles = reservas?.filter((r) => actual.incluye.includes(r.estado)) ?? []
+  const porCalificar = reservas?.filter((r) => r.puedeCalificar).length ?? 0
 
   return (
     <div className="pila-lg" style={{ maxWidth: 880, margin: '0 auto' }}>
       <div className="encabezado-pagina">
         <div>
           <h1>Mis reservas</h1>
-          <p>Paga, revisa el estado o cancela tus reservas.</p>
+          <p>Paga, revisa el estado, cancela o califica tus experiencias.</p>
         </div>
       </div>
 
@@ -128,6 +171,17 @@ export default function MisReservas({ resaltar }) {
 
       {error && <div className="mensaje error" role="alert"><TriangleAlert size={20} aria-hidden="true" />{error}</div>}
 
+      {porCalificar > 0 && (
+        <div className="mensaje info">
+          <Star size={20} aria-hidden="true" />
+          <span>
+            <strong>{porCalificar === 1 ? 'Tienes 1 experiencia por calificar' : `Tienes ${porCalificar} experiencias por calificar`}</strong>
+            Tu reseña ayuda a otros viajeros y a los prestadores locales.
+            {pestana !== 'completadas' && <> <button className="btn-enlace" onClick={() => setPestana('completadas')}>Ver completadas</button></>}
+          </span>
+        </div>
+      )}
+
       {reservas && visibles.length === 0 && (
         <div className="tarjeta vacio">
           <div className="icono-vacio"><CalendarCheck size={28} aria-hidden="true" /></div>
@@ -139,7 +193,7 @@ export default function MisReservas({ resaltar }) {
       <div className="pila" role="tabpanel">
         {visibles.map((r) => (
           <TarjetaReserva key={r.id} reserva={r} resaltada={r.id === resaltar}>
-            <AccionesTurista reserva={r} alActualizar={actualizar} alError={setError} />
+            <AccionesTurista reserva={r} alActualizar={actualizar} alError={setError} alRecargar={cargar} />
           </TarjetaReserva>
         ))}
       </div>

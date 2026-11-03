@@ -91,3 +91,11 @@ export function sumarDias(isoFecha, dias) {
 export function fecha(iso) {
   return iso ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : '-'
 }
+
+/** Instante → "12 oct 2026", sin la hora (para reseñas). */
+export function fechaDia(iso) {
+  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso))
+}
+
+// RF075
+export const TEXTO_ESTRELLAS = { 1: 'Muy malo', 2: 'Malo', 3: 'Regular', 4: 'Bueno', 5: 'Excelente' }

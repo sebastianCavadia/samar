@@ -1,6 +1,7 @@
 package co.edu.unimagdalena.samar.oferta.presentacion;
 
 import co.edu.unimagdalena.samar.oferta.servicio.excepcion.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,6 +18,13 @@ class ManejadorErrores {
   @ExceptionHandler(ReglaNegocioException.class)
   ProblemDetail reglaNegocio(ReglaNegocioException e) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+  }
+
+  /** Respaldo de las restricciones de la base (p. ej. id_reserva UNIQUE en calificacion). */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  ProblemDetail integridad(DataIntegrityViolationException e) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+        "La operación choca con datos que ya existen. Recarga e intenta de nuevo");
   }
 
   @ExceptionHandler(DatosInvalidosException.class)
