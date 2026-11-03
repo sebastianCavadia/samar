@@ -1,0 +1,31 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: cuentas-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/samar_cuentas}
+    username: ${DB_USER:cuentas}
+    password: ${DB_PASSWORD:cuentas}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # el esquema lo maneja Flyway, nunca Hibernate
+  flyway:
+    enabled: true
+
+samar:
+  cuentas:
+    jwt-secret: ${JWT_SECRET:cambia-este-secreto-de-desarrollo-de-32-bytes-o-mas}
+    jwt-expiracion-min: 60
+    max-intentos-fallidos: 5   # RF005
+    bloqueo-min: 5             # RF005
+    admin-correo: ${ADMIN_CORREO:admin@samar.co}
+    admin-password: ${ADMIN_PASSWORD:Admin12345}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

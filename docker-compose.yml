@@ -1,0 +1,89 @@
+# Entorno completo de SAMAR.
+#   docker compose up --build
+# Solo el gateway (8080) y Postgres (5433, para inspeccionar con DBeaver/pgAdmin) se exponen.
+# Los microservicios NO publican puertos: solo se alcanzan a través del gateway,
+# que es quien valida el JWT y les pasa la identidad del usuario.
+services:
+  postgres:
+    image: postgres:16
+    container_name: samar-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  cuentas-service:
+    build:
+      context: .
+      dockerfile: cuentas-service/Dockerfile
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_cuentas
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-de-desarrollo-de-32-bytes-o-mas}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  oferta-service:
+    build:
+      context: .
+      dockerfile: oferta-service/Dockerfile
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_oferta
+      CUENTAS_URL: http://cuentas-service:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  reservas-service:
+    build:
+      context: .
+      dockerfile: reservas-service/Dockerfile
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_reservas
+      CUENTAS_URL: http://cuentas-service:8081
+      OFERTA_URL: http://oferta-service:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  recomendaciones-service:
+    build:
+      context: .
+      dockerfile: recomendaciones-service/Dockerfile
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_recomendaciones
+      OFERTA_URL: http://oferta-service:8082
+      RESERVAS_URL: http://reservas-service:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-de-desarrollo-de-32-bytes-o-mas}
+      CUENTAS_URL: http://cuentas-service:8081
+      OFERTA_URL: http://oferta-service:8082
+      RESERVAS_URL: http://reservas-service:8083
+      RECOMENDACIONES_URL: http://recomendaciones-service:8084
+    ports:
+      - "8080:8080"
+    depends_on:
+      - cuentas-service
+      - oferta-service
+      - reservas-service
+      - recomendaciones-service
+
+volumes:
+  pgdata:

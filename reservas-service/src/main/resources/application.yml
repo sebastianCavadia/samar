@@ -1,0 +1,29 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: reservas-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/samar_reservas}
+    username: ${DB_USER:reservas}
+    password: ${DB_PASSWORD:reservas}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+samar:
+  servicios:
+    cuentas: ${CUENTAS_URL:http://localhost:8081}
+    oferta: ${OFERTA_URL:http://localhost:8082}
+  reservas:
+    expiracion-sin-pago-min: 15   # RF056
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -1,0 +1,16 @@
+target/
+node_modules/
+dist/
+.idea/
+*.iml
+.vscode/
+# Extensión Java de VS Code / Eclipse
+bin/
+.project
+.classpath
+.settings/
+.factorypath
+.DS_Store
+Thumbs.db
+*.log
+.env

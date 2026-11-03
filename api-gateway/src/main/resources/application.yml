@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+samar:
+  jwt:
+    secret: ${JWT_SECRET:cambia-este-secreto-de-desarrollo-de-32-bytes-o-mas}
+  servicios:
+    cuentas: ${CUENTAS_URL:http://localhost:8081}
+    oferta: ${OFERTA_URL:http://localhost:8082}
+    reservas: ${RESERVAS_URL:http://localhost:8083}
+    recomendaciones: ${RECOMENDACIONES_URL:http://localhost:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

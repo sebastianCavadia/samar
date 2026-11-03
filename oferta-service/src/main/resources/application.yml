@@ -1,0 +1,26 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: oferta-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/samar_oferta}
+    username: ${DB_USER:oferta}
+    password: ${DB_PASSWORD:oferta}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+samar:
+  servicios:
+    cuentas: ${CUENTAS_URL:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

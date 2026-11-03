@@ -1,0 +1,27 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: recomendaciones-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/samar_recomendaciones}
+    username: ${DB_USER:recomendaciones}
+    password: ${DB_PASSWORD:recomendaciones}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+samar:
+  servicios:
+    oferta: ${OFERTA_URL:http://localhost:8082}
+    reservas: ${RESERVAS_URL:http://localhost:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
