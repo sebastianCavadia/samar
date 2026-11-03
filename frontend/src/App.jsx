@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react'
-import { Compass, Contrast, LayoutDashboard, LogIn, LogOut, Menu, Moon, UserPlus, UserRound, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  CalendarCheck, Compass, Contrast, Inbox, LayoutDashboard, LogIn, LogOut, Menu, Moon, UserPlus, UserRound, X,
+} from 'lucide-react'
 import { cuentasApi, guardarToken } from './api/cliente'
 import { guardarApariencia, leerApariencia } from './apariencia'
 import Logo from './componentes/Logo'
+import Toast from './componentes/Toast'
 import { iniciales } from './formato'
 import Catalogo from './paginas/Catalogo'
 import Login from './paginas/Login'
+import MisReservas from './paginas/MisReservas'
 import MisServicios from './paginas/MisServicios'
 import Perfil from './paginas/Perfil'
 import RegistroTurista from './paginas/RegistroTurista'
+import ReservasRecibidas from './paginas/ReservasRecibidas'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -16,6 +21,10 @@ export default function App() {
   const [aviso, setAviso] = useState(null)
   const [apariencia, setApariencia] = useState(leerApariencia)
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [servicioAbierto, setServicioAbierto] = useState(null)
+  const [reservaNueva, setReservaNueva] = useState(null)
+  const [toast, setToast] = useState(null)
+  const cerrarToast = useCallback(() => setToast(null), [])
 
   // Si ya hay un token guardado, recupera el perfil (el gateway lo valida).
   useEffect(() => {
@@ -34,21 +43,38 @@ export default function App() {
     window.scrollTo({ top: 0 })
   }
 
+  /** Desde la navegación, "Explorar" siempre vuelve a la lista (cierra el servicio abierto). */
+  function irA(destino) {
+    if (destino === 'catalogo') setServicioAbierto(null)
+    ir(destino)
+  }
+
   function iniciar(u) {
     setUsuario(u)
     setAviso(null)
-    ir(u.rol === 'PRESTADOR' ? 'mis-servicios' : 'catalogo')
+    // Si entró para reservar, vuelve al servicio que estaba viendo.
+    if (servicioAbierto && u.rol === 'TURISTA') ir('catalogo')
+    else irA(u.rol === 'PRESTADOR' ? 'mis-servicios' : 'catalogo')
   }
 
   function salir() {
     guardarToken(null)
     setUsuario(null)
-    ir('catalogo')
+    irA('catalogo')
+  }
+
+  function alReservar(reserva) {
+    setReservaNueva(reserva.id)
+    setServicioAbierto(null)
+    setToast('Reserva creada: págala para que el prestador pueda confirmarla')
+    ir('mis-reservas')
   }
 
   const enlaces = [
     { id: 'catalogo', texto: 'Explorar', Icono: Compass },
+    usuario?.rol === 'TURISTA' && { id: 'mis-reservas', texto: 'Mis reservas', Icono: CalendarCheck },
     usuario?.rol === 'PRESTADOR' && { id: 'mis-servicios', texto: 'Mis servicios', Icono: LayoutDashboard },
+    usuario?.rol === 'PRESTADOR' && { id: 'reservas-recibidas', texto: 'Reservas', Icono: Inbox },
   ].filter(Boolean)
 
   const actual = (id) => (vista === id ? 'page' : undefined)
@@ -59,7 +85,7 @@ export default function App() {
 
       <header className="encabezado">
         <div className="contenedor">
-          <button className="marca" onClick={() => ir('catalogo')} aria-label="SAMAR, ir al inicio">
+          <button className="marca" onClick={() => irA('catalogo')} aria-label="SAMAR, ir al inicio">
             <Logo tamano={38} />
             <span>
               <strong>SAMAR</strong>
@@ -69,7 +95,7 @@ export default function App() {
 
           <nav className="nav-principal" aria-label="Principal">
             {enlaces.map(({ id, texto, Icono }) => (
-              <button key={id} aria-current={actual(id)} onClick={() => ir(id)}>
+              <button key={id} aria-current={actual(id)} onClick={() => irA(id)}>
                 <Icono size={18} aria-hidden="true" /> {texto}
               </button>
             ))}
@@ -111,7 +137,7 @@ export default function App() {
 
         <div id="menu-movil" className="menu-movil" data-abierto={menuAbierto}>
           {enlaces.map(({ id, texto, Icono }) => (
-            <button key={id} className="btn btn-fantasma" aria-current={actual(id)} onClick={() => ir(id)}>
+            <button key={id} className="btn btn-fantasma" aria-current={actual(id)} onClick={() => irA(id)}>
               <Icono size={18} aria-hidden="true" /> {texto}
             </button>
           ))}
@@ -130,8 +156,13 @@ export default function App() {
       </header>
 
       <main id="contenido" className="contenedor" tabIndex={-1}>
-        {vista === 'catalogo' && <Catalogo />}
+        {vista === 'catalogo' && (
+          <Catalogo usuario={usuario} servicioAbierto={servicioAbierto} abrirServicio={setServicioAbierto}
+            alIrALogin={() => { setAviso(null); ir('login') }} alReservar={alReservar} />
+        )}
+        {vista === 'mis-reservas' && usuario && <MisReservas resaltar={reservaNueva} />}
         {vista === 'mis-servicios' && usuario && <MisServicios usuario={usuario} />}
+        {vista === 'reservas-recibidas' && usuario && <ReservasRecibidas />}
         {vista === 'perfil' && usuario && <Perfil usuario={usuario} />}
         {vista === 'login' && !usuario && (
           <Login aviso={aviso} alIniciar={iniciar} irARegistro={() => { setAviso(null); ir('registro') }} />
@@ -150,6 +181,8 @@ export default function App() {
           <span>Proyecto de Arquitectura de Software · Universidad del Magdalena</span>
         </div>
       </footer>
+
+      <Toast mensaje={toast} alCerrar={cerrarToast} />
     </div>
   )
 }

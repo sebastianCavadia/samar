@@ -34,6 +34,38 @@ export function iniciales(nombre = '') {
   return nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('')
 }
 
+// RF048: estado → texto y estilo de la insignia
+export const ESTADOS_RESERVA = {
+  PENDIENTE: { texto: 'Pendiente', clase: 'aviso' },
+  CONFIRMADA: { texto: 'Confirmada', clase: 'ok' },
+  COMPLETADA: { texto: 'Completada', clase: 'tipo' },
+  RECHAZADA: { texto: 'Rechazada', clase: 'error' },
+  CANCELADA: { texto: 'Cancelada', clase: 'apagada' },
+}
+
+// RF040: el motivo se elige de una lista
+export const MOTIVOS_TURISTA = ['Cambio de planes', 'Problemas de salud', 'Condiciones del clima', 'Encontré otra opción', 'Otro motivo']
+export const MOTIVOS_PRESTADOR = ['Cierre por clima o fuerza mayor', 'Cierre del parque o zona', 'No hay personal disponible', 'Error en los cupos publicados', 'Otro motivo']
+
+/** "2026-11-12" → "Mié, 12 nov 2026". Se arma en hora local para que no se corra un día por la zona horaria. */
+export function fechaCorta(isoFecha) {
+  const [a, m, d] = isoFecha.split('-').map(Number)
+  const texto = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    .format(new Date(a, m - 1, d))
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+export function hoyIso() {
+  const h = new Date()
+  return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`
+}
+
+export function sumarDias(isoFecha, dias) {
+  const [a, m, d] = isoFecha.split('-').map(Number)
+  const f = new Date(a, m - 1, d + dias)
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`
+}
+
 export function fecha(iso) {
   return iso ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : '-'
 }

@@ -3,6 +3,7 @@ import { Mail, TriangleAlert, UserPlus, UserRound } from 'lucide-react'
 import { cuentasApi } from '../api/cliente'
 import CampoClave from '../componentes/CampoClave'
 import PanelAcceso from '../componentes/PanelAcceso'
+import { hoyIso } from '../formato'
 
 const VACIO = {
   nombre: '', correo: '', password: '', tipoDocumento: 'CC', numeroDocumento: '',
@@ -23,7 +24,7 @@ export default function RegistroTurista({ alRegistrar, irALogin }) {
     setError(null)
     setEnviando(true)
     try {
-      await cuentasApi.registrarTurista({ ...datos, fechaNacimiento: datos.fechaNacimiento || null })
+      await cuentasApi.registrarTurista(datos)
       alRegistrar()
     } catch (err) {
       setError(err.message)
@@ -73,17 +74,18 @@ export default function RegistroTurista({ alRegistrar, irALogin }) {
         </div>
         <div className="fila">
           <label className="campo">
-            <span>Nacionalidad <span className="ayuda">· opcional</span></span>
-            <input className="control" value={datos.nacionalidad} onChange={cambiar('nacionalidad')} />
+            <span>Nacionalidad</span>
+            <input className="control" value={datos.nacionalidad} onChange={cambiar('nacionalidad')} required maxLength={80} />
           </label>
           <label className="campo">
-            <span>País de residencia <span className="ayuda">· opcional</span></span>
-            <input className="control" autoComplete="country-name" value={datos.paisResidencia} onChange={cambiar('paisResidencia')} />
+            <span>País de residencia</span>
+            <input className="control" autoComplete="country-name" value={datos.paisResidencia} onChange={cambiar('paisResidencia')} required maxLength={80} />
           </label>
         </div>
         <label className="campo">
           <span>Fecha de nacimiento <span className="ayuda">· la usamos para actividades con edad mínima</span></span>
-          <input className="control" type="date" autoComplete="bday" value={datos.fechaNacimiento} onChange={cambiar('fechaNacimiento')} />
+          <input className="control" type="date" autoComplete="bday" max={hoyIso()} value={datos.fechaNacimiento}
+            onChange={cambiar('fechaNacimiento')} required />
         </label>
         <label className="casilla">
           <input type="checkbox" checked={datos.discapacidad} onChange={cambiar('discapacidad')} />

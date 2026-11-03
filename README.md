@@ -90,7 +90,8 @@ curl localhost:8080/api/cuentas/perfil -H "Authorization: Bearer <token>"
 | api-gateway (rutas + JWT) | Listo |
 | cuentas-service: registro turista y prestador, login con bloqueo (RF001-006, RF013), validación de prestadores (RF095) | Listo, es **la plantilla** a copiar |
 | oferta-service: registrar/editar servicios (RF016, RF017, RF023-026), activar/desactivar (RF032), catálogo con búsqueda, filtros y paginación (RF073, RF074, RF077, RF082), solo prestadores validados publican (RF085) | Listo |
-| reservas, recomendaciones: capas, esquema Flyway, regla de capas | Esqueleto, falta la lógica |
+| reservas-service: cupos por fecha (RF018, RF034, RF035), reservar con precio fijado y validaciones (RF036, RF047, RF064-RF066), pago simulado o con comprobante (RF043, RF044, RF055), confirmar/rechazar/cancelar con reembolso (RF038, RF040, RF045), expiración y completado automáticos (RF049, RF056), bitácora (RF057) | Listo, probado en Docker (`pruebas/e2e-reservas.sh`) |
+| recomendaciones: capas, esquema Flyway, regla de capas | Esqueleto, falta la lógica |
 | frontend: login, registro, catálogo con filtros y detalle, panel "Mis servicios" del prestador | Listo para estos casos de uso |
 
 Pendiente en oferta: subida de archivos de imagen (RF019; hoy se registran URLs con texto alternativo),
@@ -108,6 +109,42 @@ y calificaciones (RF075/RF076, que dependen de reservas COMPLETADAS, ver ADR-11)
 | `PATCH /api/oferta/prestador/servicios/{id}/estado` | Dueño | `{"activo": false}` lo saca del catálogo sin borrarlo |
 | `GET /api/oferta/prestador/servicios[/{id}]` | Prestador | Sus servicios, incluidos los inactivos |
 | `GET /internal/servicios/{id}` | Solo red interna | Precio, dueño, modalidad, capacidad y edad mínima para reservas-service |
+
+### API de reservas-service
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /api/reservas/disponibilidad?servicio&desde&hasta` | Público | Fechas con cupos libres |
+| `POST /api/reservas` `{idDisponibilidad, personas}` | Turista | Crea la reserva PENDIENTE y ocupa cupos (atómico, sin overbooking) |
+| `POST /api/reservas/{id}/pagos` `{medio: PASARELA\|COMPROBANTE, referencia}` | Turista dueño | Pago simulado (aprobado al instante) o comprobante para revisión |
+| `POST /api/reservas/{id}/cancelar` `{motivo}` | Turista o prestador | Libera cupos y reembolsa si estaba pagada |
+| `GET /api/reservas/mis` · `GET /api/reservas/{id}` | Turista / partes | Historial con estado, pago y bitácora |
+| `GET /api/reservas/prestador/reservas?estado` | Prestador | Reservas recibidas |
+| `POST /api/reservas/prestador/reservas/{id}/confirmar` · `/rechazar` · `/pago {aprobado}` | Prestador dueño | Confirmar (solo con pago aprobado), rechazar, revisar comprobante |
+| `GET`/`POST /api/reservas/prestador/servicios/{id}/disponibilidad` | Prestador dueño | Ver o abrir cupos por rango de fechas y días de la semana |
+| `PATCH /api/reservas/prestador/disponibilidad/{id}` `{activo}` | Prestador dueño | Bloquear o desbloquear una fecha |
+
+Ciclo de vida (RF048): `PENDIENTE → CONFIRMADA → COMPLETADA`, o `PENDIENTE → RECHAZADA/CANCELADA`, o
+`CONFIRMADA → CANCELADA`. Cada minuto una tarea cancela las pendientes sin pago tras 15 min (RF056) y
+completa las confirmadas cuya fecha pasó (RF049). Para probarlo rápido:
+`EXPIRACION_SIN_PAGO_MIN=1 TAREA_MS=10000 docker compose up -d`.
+
+### Prueba de punta a punta (incluye concurrencia)
+
+Con el sistema levantado (`docker compose up -d`), desde la raíz del repositorio:
+
+```bash
+bash pruebas/e2e-reservas.sh todo
+```
+
+Recorre disponibilidad, reserva, pago, confirmación, rechazo, cancelación, permisos y caída de
+servicios. Incluye **40 reservas simultáneas sobre 5 cupos**: deben resultar exactamente 5 reservas y
+35 rechazos, sin sobreventa. Al final comprueba en la base que, en todas las fechas, los cupos
+reservados coinciden con las reservas que los ocupan. La fase `tiempo` prueba la expiración y el
+completado automáticos; requiere arrancar reservas con `EXPIRACION_SIN_PAGO_MIN=1 TAREA_MS=5000`.
+
+Cuentas de demo (clave `ClaveSegura1`): turista `ana@demo.co`, prestador validado `tours@demo.co`,
+prestador sin validar `hostal@demo.co`. Administrador: `admin@samar.co` / `Admin12345`.
 
 ## Cómo agregar una funcionalidad (ejemplo: RF016 registrar servicio en oferta)
 

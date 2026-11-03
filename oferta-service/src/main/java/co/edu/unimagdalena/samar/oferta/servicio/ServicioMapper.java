@@ -20,7 +20,7 @@ final class ServicioMapper {
 
   static ServicioResumenResponse aResumen(ServicioTuristico s, Instant ahora) {
     ImagenDatos principal = s.getImagenes().isEmpty() ? null : aImagen(s.getImagenes().get(0));
-    return new ServicioResumenResponse(s.getId(), s.getTipo().name(), s.getNombre(), s.getZona(),
+    return new ServicioResumenResponse(s.getId(), s.getTipo().name(), s.getNombre(), s.getModalidad().name(), s.getZona(),
         s.getPrecioBase(), s.getMoneda(), s.isAccesible(), s.isActivo(), s.getCalificacionPromedio(),
         s.getTotalCalificaciones(), s.esNuevo(ahora), Enums.nombres(s.getCategorias()), principal);
   }

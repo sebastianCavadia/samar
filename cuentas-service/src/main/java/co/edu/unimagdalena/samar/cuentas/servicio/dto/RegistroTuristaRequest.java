@@ -4,7 +4,7 @@ import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 
-/** RF001 + RF002. */
+/** RF001 + RF002 (documento, nacionalidad, país de residencia y fecha de nacimiento son obligatorios). */
 public record RegistroTuristaRequest(
     @NotBlank @Size(max = 120) String nombre,
     @NotBlank @Email String correo,
@@ -12,8 +12,8 @@ public record RegistroTuristaRequest(
     String telefono,
     @NotBlank @Pattern(regexp = "CC|CE|PASAPORTE") String tipoDocumento,
     @NotBlank @Size(max = 40) String numeroDocumento,
-    String nacionalidad,
-    String paisResidencia,
-    @Past LocalDate fechaNacimiento,
+    @NotBlank @Size(max = 80) String nacionalidad,
+    @NotBlank @Size(max = 80) String paisResidencia,
+    @NotNull @Past LocalDate fechaNacimiento,
     boolean discapacidad) {
 }

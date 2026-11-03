@@ -6,7 +6,7 @@ import org.springframework.util.AntPathMatcher;
 
 import java.util.List;
 
-/** Rutas que no exigen token: registro, login y consulta pública del catálogo (visitante anónimo). */
+/** Rutas que no exigen token: registro, login, catálogo y cupos disponibles (visitante anónimo). */
 final class RutasPublicas {
 
   private record Ruta(HttpMethod metodo, String patron) {
@@ -18,6 +18,7 @@ final class RutasPublicas {
       new Ruta(HttpMethod.POST, "/api/cuentas/auth/**"),
       new Ruta(HttpMethod.GET, "/api/oferta/servicios/**"),
       new Ruta(HttpMethod.GET, "/api/oferta/servicios"),
+      new Ruta(HttpMethod.GET, "/api/reservas/disponibilidad"),
       new Ruta(HttpMethod.GET, "/actuator/health"));
 
   private RutasPublicas() {

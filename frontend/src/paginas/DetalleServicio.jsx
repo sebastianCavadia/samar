@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  Accessibility, ArrowLeft, ArrowRight, BedDouble, CalendarCheck, Check, ChefHat, ChevronRight, Clock,
+  Accessibility, ArrowLeft, BedDouble, CalendarCheck, Check, ChefHat, ChevronRight, Clock,
   ExternalLink, Gauge, Leaf, MapPin, MessageSquareText, Salad, ShieldCheck, Sparkles, Store, Timer,
   TriangleAlert, UserRound, Users,
 } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
 import Calificacion from '../componentes/Calificacion'
-import { CATEGORIAS, DIETAS, DIFICULTADES, TIPOS, UNIDAD_PRECIO, hora, precio } from '../formato'
+import PanelReserva from '../componentes/PanelReserva'
+import { CATEGORIAS, DIETAS, DIFICULTADES, TIPOS, hora } from '../formato'
 import { ICONO_CATEGORIA, ICONO_TIPO } from '../iconos'
 
 // RF061: consejos de turismo responsable que acompañan cada servicio.
@@ -72,7 +73,7 @@ function Galeria({ imagenes, tipo }) {
 }
 
 // RF074: información completa del servicio (mockup 5).
-export default function DetalleServicio({ id, volver }) {
+export default function DetalleServicio({ id, volver, usuario, alIrALogin, alReservar }) {
   const [s, setS] = useState(null)
   const [error, setError] = useState(null)
 
@@ -188,26 +189,7 @@ export default function DetalleServicio({ id, volver }) {
             </div>
 
             <aside className="lateral" aria-label="Precio y reserva">
-              <div className="tarjeta tarjeta-precio pila">
-                <div>
-                  <span className="desde">Precio desde</span>
-                  <div className="monto">{precio(s.precioBase, s.moneda)}</div>
-                  <div className="unidad">{s.moneda} · {UNIDAD_PRECIO[s.tipo]}</div>
-                </div>
-                {s.modalidad === 'RESERVA' ? (
-                  <>
-                    <button className="btn btn-primario btn-grande btn-bloque" disabled aria-describedby="nota-reserva">
-                      Reservar <ArrowRight size={18} aria-hidden="true" />
-                    </button>
-                    <p id="nota-reserva" className="suave pequeno">La reserva en línea estará disponible muy pronto.</p>
-                  </>
-                ) : (
-                  <div className="mensaje info">
-                    <Store size={18} aria-hidden="true" />
-                    <span>No necesita reserva: llega directamente en su horario de atención.</span>
-                  </div>
-                )}
-              </div>
+              <PanelReserva servicio={s} usuario={usuario} alIrALogin={alIrALogin} alReservar={alReservar} />
 
               <div className="tarjeta bloque-info">
                 <ShieldCheck size={24} aria-hidden="true" />

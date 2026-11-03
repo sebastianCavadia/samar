@@ -63,3 +63,24 @@ export const ofertaApi = {
   cambiarEstado: (id, activo) =>
     api(`/api/oferta/prestador/servicios/${id}/estado`, { metodo: 'PATCH', cuerpo: { activo } }),
 }
+
+export const reservasApi = {
+  // Turista (la consulta de cupos es pública)
+  disponibilidad: (idServicio, desde, hasta) =>
+    api(`/api/reservas/disponibilidad?${aQuery({ servicio: idServicio, desde, hasta })}`),
+  crear: (idDisponibilidad, personas) => api('/api/reservas', { metodo: 'POST', cuerpo: { idDisponibilidad, personas } }),
+  mis: () => api('/api/reservas/mis'),
+  pagar: (id, medio, referencia) => api(`/api/reservas/${id}/pagos`, { metodo: 'POST', cuerpo: { medio, referencia } }),
+  cancelar: (id, motivo) => api(`/api/reservas/${id}/cancelar`, { metodo: 'POST', cuerpo: { motivo } }),
+
+  // Prestador
+  recibidas: (estado) => api(`/api/reservas/prestador/reservas?${aQuery({ estado })}`),
+  confirmar: (id) => api(`/api/reservas/prestador/reservas/${id}/confirmar`, { metodo: 'POST' }),
+  rechazar: (id, motivo) => api(`/api/reservas/prestador/reservas/${id}/rechazar`, { metodo: 'POST', cuerpo: { motivo } }),
+  validarPago: (id, aprobado) => api(`/api/reservas/prestador/reservas/${id}/pago`, { metodo: 'POST', cuerpo: { aprobado } }),
+  fechasPrestador: (idServicio, desde, hasta) =>
+    api(`/api/reservas/prestador/servicios/${idServicio}/disponibilidad?${aQuery({ desde, hasta })}`),
+  abrirFechas: (idServicio, datos) =>
+    api(`/api/reservas/prestador/servicios/${idServicio}/disponibilidad`, { metodo: 'POST', cuerpo: datos }),
+  cambiarFecha: (id, activo) => api(`/api/reservas/prestador/disponibilidad/${id}`, { metodo: 'PATCH', cuerpo: { activo } }),
+}

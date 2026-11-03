@@ -31,11 +31,14 @@ Estas son las decisiones que se tomaron al empezar la construcción.
 - **Estado:** Aceptada.
 - **Contexto:** Descontar cupos y crear la reserva deben ocurrir juntos. Si vivieran en servicios
   distintos haría falta una transacción distribuida (sagas), que es demasiado para 6 meses.
-- **Decisión:** `disponibilidad` vive en la base de reservas. Se protege con bloqueo optimista
-  (`version`) y con `CHECK (cupos_reservados <= cupos_totales)`. Al reservar se copian el nombre
-  y el precio del servicio (RF047).
-- **Consecuencia:** No hay overbooking aunque lleguen reservas simultáneas, y las reservas antiguas
-  se muestran aunque oferta esté caído.
+- **Decisión:** `disponibilidad` vive en la base de reservas. Los cupos se ocupan con un único
+  `UPDATE ... SET cupos_reservados = cupos_reservados + n WHERE ... AND cupos_reservados + n <= cupos_totales`:
+  la condición y el incremento son atómicos en PostgreSQL, sin bloqueos explícitos ni reintentos.
+  Como respaldo, `CHECK (cupos_reservados <= cupos_totales)`. Las ediciones del prestador usan
+  bloqueo optimista (`version`). Al reservar se copian el nombre y el precio del servicio (RF047).
+- **Consecuencia:** Verificado con 40 reservas simultáneas sobre 5 cupos: exactamente 5 creadas y
+  35 rechazadas con 409, sin sobreventa (`pruebas/e2e-reservas.sh`). Las reservas antiguas se
+  muestran aunque oferta esté caído.
 
 ## ADR-08: Dependencias entre servicios en una sola dirección
 
@@ -69,6 +72,22 @@ Estas son las decisiones que se tomaron al empezar la construcción.
   caído (verificado apagando el contenedor). Editar o desactivar tampoco dependen de cuentas.
   Pendiente: si un administrador desactiva a un prestador ya validado, sus ofertas deberán
   ocultarse con un job de sincronización o un evento.
+
+## ADR-12: Reservas consulta otros servicios fuera de la transacción y se degrada con control
+
+- **Estado:** Aceptada.
+- **Contexto:** Crear una reserva necesita datos de oferta (precio, dueño, capacidad, edad mínima)
+  y de cuentas (nombre, fecha de nacimiento). Si esas llamadas ocurren dentro de la transacción,
+  cada reserva retiene una conexión de la base mientras espera la red, y en temporada alta el pool
+  de conexiones se agota.
+- **Decisión:** Primero las llamadas remotas (con timeouts de 2 y 3 s), luego una transacción corta
+  (`TransactionTemplate`) que solo ocupa cupos y guarda. Si cuentas no responde se sigue reservando
+  sin el nombre del turista, salvo que el servicio tenga edad mínima (no hay forma segura de
+  validarla: 503). Si oferta no responde, 503: sin precio confiable no se reserva.
+  Cada cambio de estado incrementa la versión de la reserva (`OPTIMISTIC_FORCE_INCREMENT`), así
+  que confirmar y expirar al mismo tiempo nunca se pisan.
+- **Consecuencia:** Verificado congelando cada servicio en Docker. La consulta pública de cupos
+  no depende de nadie.
 
 ## ADR-11: Las calificaciones entran por reservas-service
 

@@ -15,7 +15,8 @@ const POR_PAGINA = 10
 const textoLimpio = (b) => ({ q: b.q.trim(), zona: b.zona.trim(), precioMax: b.precioMax })
 
 // RF073 buscar y filtrar, RF077 listar sin criterios, RF082 "Nuevo". Diseño basado en el mockup 4.
-export default function Catalogo() {
+// El servicio abierto lo guarda App: así, tras iniciar sesión para reservar, se vuelve al mismo servicio.
+export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIrALogin, alReservar }) {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS)
   const [borrador, setBorrador] = useState(TEXTO_VACIO) // campos de texto, se aplican con retardo
   const [orden, setOrden] = useState('recientes')
@@ -24,7 +25,6 @@ export default function Catalogo() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [reintento, setReintento] = useState(0)
-  const [seleccionado, setSeleccionado] = useState(null)
 
   // Busca mientras se escribe, pero sin mandar una petición por cada tecla.
   useEffect(() => {
@@ -69,12 +69,11 @@ export default function Catalogo() {
     setPagina(0)
   }
 
-  function abrir(id) {
-    setSeleccionado(id)
-  }
-
-  if (seleccionado) {
-    return <DetalleServicio id={seleccionado} volver={() => setSeleccionado(null)} />
+  if (servicioAbierto) {
+    return (
+      <DetalleServicio id={servicioAbierto} volver={() => abrirServicio(null)} usuario={usuario}
+        alIrALogin={alIrALogin} alReservar={alReservar} />
+    )
   }
 
   const escribir = (campo) => (e) => setBorrador({ ...borrador, [campo]: e.target.value })
@@ -223,7 +222,7 @@ export default function Catalogo() {
         {resultado && total > 0 && (
           <ul className="grilla" aria-busy={cargando} style={{ opacity: cargando ? 0.6 : 1, transition: 'opacity .2s' }}>
             {resultado.contenido.map((s) => (
-              <li key={s.id}><TarjetaServicio servicio={s} alAbrir={abrir} /></li>
+              <li key={s.id}><TarjetaServicio servicio={s} alAbrir={abrirServicio} /></li>
             ))}
           </ul>
         )}

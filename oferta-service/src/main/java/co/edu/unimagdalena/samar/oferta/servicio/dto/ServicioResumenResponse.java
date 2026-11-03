@@ -8,6 +8,7 @@ public record ServicioResumenResponse(
     Long id,
     String tipo,
     String nombre,
+    String modalidad,
     String zona,
     BigDecimal precioBase,
     String moneda,

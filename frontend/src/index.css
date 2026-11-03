@@ -600,6 +600,71 @@ textarea.control { resize: vertical; min-height: 96px; }
 input[type='search']::-webkit-search-cancel-button { display: none; }
 input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
 
+/* ---------- Reservar (panel lateral del detalle) ---------- */
+.etiqueta-paso { font-size: 14px; font-weight: 700; }
+.opciones-fecha { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.opcion-fecha {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  font: inherit; color: var(--texto); background: var(--superficie); cursor: pointer;
+  padding: 10px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
+}
+.opcion-fecha strong { font-size: 14px; }
+.opcion-fecha span { font-size: 12.5px; color: var(--texto-2); }
+.opcion-fecha:hover:not(:disabled) { border-color: var(--primario); }
+.opcion-fecha[aria-checked='true'] { border: 2px solid var(--primario); background: var(--primario-tenue); padding: 9px 11px; }
+.opcion-fecha:disabled { opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+.contador-personas { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px; border: 1px solid var(--borde); border-radius: var(--radio-sm); }
+.contador-personas > span { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.desglose { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 14px 0 0; border-top: 1px solid var(--borde); font-size: 14.5px; }
+.desglose dd { text-align: right; }
+.desglose .total { font-weight: 800; font-size: 17px; color: var(--texto); padding-top: 8px; border-top: 1px dashed var(--borde); }
+
+/* ---------- Tarjetas de reserva ---------- */
+.insignia.aviso { background: var(--aviso-tenue); color: var(--aviso); }
+.insignia.error { background: var(--error-tenue); color: var(--error); }
+.tarjeta-reserva { display: flex; flex-direction: column; gap: 14px; padding: 20px; }
+.tarjeta-reserva.resaltada { border-color: var(--primario); box-shadow: var(--foco); }
+.cabecera-reserva { display: flex; align-items: flex-start; gap: 14px; }
+.cabecera-reserva h3 { font-size: 17px; }
+.icono-reserva { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--primario-tenue); color: var(--primario); flex-shrink: 0; }
+.meta-reserva { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.meta-reserva .dato-icono { color: var(--texto); }
+.total-reserva { margin-left: auto; font-size: 18px; }
+.estado-pago { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; color: var(--texto-2); padding: 10px 12px; background: var(--superficie-2); border-radius: var(--radio-sm); }
+.plazo { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-weight: 700; color: var(--aviso); }
+.plazo.vencido { color: var(--error); }
+.acciones-reserva { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.acciones-reserva .suave { display: inline-flex; align-items: center; gap: 6px; }
+.formulario-linea { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; width: 100%; }
+.btn-peligro { background: var(--error); color: #fff; }
+.btn-peligro:hover:not(:disabled) { filter: brightness(0.92); }
+:root[data-contraste='alto'] .btn-peligro { color: var(--fondo); }
+.historial { font-size: 14px; }
+.historial summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--primario); font-weight: 600; }
+.historial ol { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+.pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--borde); overflow-x: auto; }
+.pestanas button {
+  font: inherit; font-weight: 600; font-size: 15px; color: var(--texto-2); background: none; cursor: pointer;
+  border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.pestanas button:hover { color: var(--primario); }
+.pestanas button[aria-selected='true'] { color: var(--primario); border-bottom-color: var(--primario); }
+.conteo { font-size: 12px; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--superficie-2); border: 1px solid var(--borde); }
+
+/* ---------- Fechas y cupos (prestador) ---------- */
+.chip-dia { width: 42px; justify-content: center; padding: 8px 0; }
+.lista-fechas { list-style: none; margin: 0; padding: 0; }
+.lista-fechas li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px 20px; border-top: 1px solid var(--borde); }
+.lista-fechas .info { flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px; }
+
+.lista-fechas li.inactivo .info { opacity: 0.6; }
+.lista-fechas .control-estado { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 120px; }
+.barra-ocupacion { flex: 0 1 160px; height: 8px; border-radius: 999px; background: var(--superficie-2); border: 1px solid var(--borde); overflow: hidden; }
+.barra-ocupacion span { display: block; height: 100%; background: var(--primario); }
+.barra-ocupacion span.alta { background: var(--aviso); }
+
 /* ---------- Perfil ---------- */
 .perfil-cabecera { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .perfil-cabecera h1 { font-size: 24px; }

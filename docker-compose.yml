@@ -51,6 +51,9 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/samar_reservas
       CUENTAS_URL: http://cuentas-service:8081
       OFERTA_URL: http://oferta-service:8082
+      # Para probar la expiración rápido: EXPIRACION_SIN_PAGO_MIN=1 TAREA_MS=10000 docker compose up -d
+      EXPIRACION_SIN_PAGO_MIN: ${EXPIRACION_SIN_PAGO_MIN:-15}
+      TAREA_MS: ${TAREA_MS:-60000}
     depends_on:
       postgres:
         condition: service_healthy

@@ -20,7 +20,10 @@ samar:
     cuentas: ${CUENTAS_URL:http://localhost:8081}
     oferta: ${OFERTA_URL:http://localhost:8082}
   reservas:
-    expiracion-sin-pago-min: 15   # RF056
+    expiracion-sin-pago-min: ${EXPIRACION_SIN_PAGO_MIN:15}   # RF056
+    max-dias-apertura: 120
+    zona-horaria: America/Bogota
+    tarea-ms: ${TAREA_MS:60000}   # cada cuánto corren expiración (RF056) y completado (RF049)
 
 management:
   endpoints:

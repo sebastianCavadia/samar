@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Eye, EyeOff, LayoutGrid, MapPin, Pencil, Plus, ShieldAlert, Store, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Eye, EyeOff, LayoutGrid, MapPin, Pencil, Plus, ShieldAlert, Store, TriangleAlert } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
 import Toast from '../componentes/Toast'
 import { TIPOS, UNIDAD_PRECIO, precio } from '../formato'
 import { ICONO_TIPO } from '../iconos'
 import FormServicio from './FormServicio'
+import GestionFechas from './GestionFechas'
 
 // Panel del prestador: sus servicios (incluidos inactivos), crear, editar y publicar/ocultar (RF032).
 export default function MisServicios({ usuario }) {
   const [servicios, setServicios] = useState(null)
   const [editando, setEditando] = useState(null) // null = lista, 'nuevo' o el detalle a editar
+  const [gestionandoFechas, setGestionandoFechas] = useState(null) // servicio cuyas fechas y cupos se gestionan
   const [error, setError] = useState(null)
   const [toast, setToast] = useState(null)
   const cerrarToast = useCallback(() => setToast(null), [])
@@ -41,6 +43,10 @@ export default function MisServicios({ usuario }) {
       setServicios((lista) => lista.map((x) => (x.id === s.id ? { ...x, activo: s.activo } : x)))
       setError(e.message)
     }
+  }
+
+  if (gestionandoFechas) {
+    return <GestionFechas servicio={gestionandoFechas} volver={() => { setGestionandoFechas(null); window.scrollTo({ top: 0 }) }} />
   }
 
   if (editando) {
@@ -127,9 +133,16 @@ export default function MisServicios({ usuario }) {
                       aria-label={`Publicar ${s.nombre} en el catálogo`} />
                     <span>{s.activo ? 'Publicado' : 'Oculto'}</span>
                   </div>
-                  <button className="btn btn-secundario" onClick={() => abrirEdicion(s.id)}>
-                    <Pencil size={16} aria-hidden="true" /> Editar
-                  </button>
+                  <div className="acciones">
+                    {s.modalidad === 'RESERVA' && (
+                      <button className="btn btn-secundario" onClick={() => { setGestionandoFechas(s); window.scrollTo({ top: 0 }) }}>
+                        <CalendarDays size={16} aria-hidden="true" /> Fechas y cupos
+                      </button>
+                    )}
+                    <button className="btn btn-secundario" onClick={() => abrirEdicion(s.id)}>
+                      <Pencil size={16} aria-hidden="true" /> Editar
+                    </button>
+                  </div>
                 </li>
               )
             })}
