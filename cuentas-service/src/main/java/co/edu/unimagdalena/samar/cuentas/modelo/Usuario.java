@@ -72,6 +72,15 @@ public abstract class Usuario {
     }
   }
 
+  /** RF093: el administrador cambia el estado. Al reactivar se limpia cualquier bloqueo temporal (RF005). */
+  public void cambiarEstado(EstadoCuenta nuevo) {
+    this.estado = nuevo;
+    if (nuevo == EstadoCuenta.ACTIVO) {
+      intentosFallidos = 0;
+      bloqueadoHasta = null;
+    }
+  }
+
   /** RF013: login correcto reinicia contadores y registra el último acceso. */
   public void registrarAccesoExitoso(Instant ahora) {
     intentosFallidos = 0;

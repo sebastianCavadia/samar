@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Comunicación entre microservicios: oferta consulta a cuentas por REST
@@ -44,6 +45,19 @@ public class CuentasClient {
             }
             return Optional.ofNullable(res.bodyTo(UsuarioRemoto.class));
           });
+    } catch (RestClientException e) {
+      throw new IntegracionException("cuentas-service no disponible", e);
+    }
+  }
+
+  /**
+   * ADR-13: ids de prestadores con la cuenta desactivada o bloqueada.
+   * @throws IntegracionException si cuentas-service no responde
+   */
+  public Set<Long> prestadoresSuspendidos() {
+    try {
+      Long[] ids = http.get().uri("/internal/prestadores/suspendidos").retrieve().body(Long[].class);
+      return ids == null ? Set.of() : Set.of(ids);
     } catch (RestClientException e) {
       throw new IntegracionException("cuentas-service no disponible", e);
     }

@@ -43,12 +43,21 @@ verificar "registro sin nacionalidad/pais/fecha se rechaza (RF002)" 400
 TC=$(tok "carlos$RUN@demo.co" ClaveSegura1)
 TS=$(tok "sofia$RUN@demo.co" ClaveSegura1)
 
-# IDs de servicios del prestador demo
-llamar GET /api/oferta/prestador/servicios "$TP"
-sid() { campo "[s['id'] for s in d if s['nombre']=='$1'][0]"; }
-S_HOTEL=$(sid "Hotel Rodadero Mar & Spa"); S_CAMINATA=$(sid "Caminata al Parque Tayrona")
-S_MARISCOS=$(sid "Mariscos de Taganga"); S_MINCA1=$(sid "Tour Minca 1"); S_MINCA2=$(sid "Tour Minca 2")
-echo "  servicios: hotel=$S_HOTEL caminata=$S_CAMINATA mariscos=$S_MARISCOS minca1=$S_MINCA1 minca2=$S_MINCA2"
+# Servicios propios de esta corrida: así la prueba se puede repetir sin arrastrar reservas de corridas
+# anteriores. Al final se desactivan para que no aparezcan en el catálogo de la demo.
+crear() { llamar POST /api/oferta/prestador/servicios "$TP" "$1"; campo "d['id']"; }
+S_MINCA1=$(crear "{\"tipo\":\"ACTIVIDAD\",\"nombre\":\"Tour E2E $RUN\",\"modalidad\":\"RESERVA\",\"precioBase\":91000,\"direccion\":\"Minca\",\"zona\":\"Minca\",\"categorias\":[\"NATURALEZA\"],\"actividad\":{}}")
+S_MINCA2=$(crear "{\"tipo\":\"ACTIVIDAD\",\"nombre\":\"Tour Concurrencia E2E $RUN\",\"modalidad\":\"RESERVA\",\"precioBase\":90000,\"direccion\":\"Minca\",\"zona\":\"Minca\",\"categorias\":[\"NATURALEZA\"],\"actividad\":{}}")
+S_CAMINATA=$(crear "{\"tipo\":\"ACTIVIDAD\",\"nombre\":\"Caminata E2E $RUN\",\"modalidad\":\"RESERVA\",\"precioBase\":180000,\"direccion\":\"Tayrona\",\"zona\":\"Tayrona\",\"categorias\":[\"NATURALEZA\"],\"actividad\":{\"edadMinima\":12,\"horaInicio\":\"07:00\"}}")
+S_HOTEL=$(crear "{\"tipo\":\"HOSPEDAJE\",\"nombre\":\"Hotel E2E $RUN\",\"modalidad\":\"RESERVA\",\"precioBase\":380000,\"direccion\":\"Cra 1\",\"zona\":\"Rodadero\",\"categorias\":[\"PLAYA\"],\"hospedaje\":{\"capacidadPersonas\":3}}")
+S_MARISCOS=$(crear "{\"tipo\":\"GASTRONOMICO\",\"nombre\":\"Sin reserva E2E $RUN\",\"modalidad\":\"WALK_IN\",\"precioBase\":50000,\"direccion\":\"Taganga\",\"zona\":\"Taganga\",\"categorias\":[\"GASTRONOMIA\"],\"gastronomico\":{}}")
+echo "  servicios de esta corrida: actividad=$S_MINCA1 concurrencia=$S_MINCA2 caminata=$S_CAMINATA hotel=$S_HOTEL sin-reserva=$S_MARISCOS"
+# Fechas base para las fases que no pasan por la sección A (concurrencia, resiliencia, tiempo).
+preparar_fechas() {
+  llamar POST "/api/reservas/prestador/servicios/$S_MINCA1/disponibilidad" "$TP" "{\"desde\":\"$D1\",\"hasta\":\"$(dia 14)\",\"cupos\":8}"
+  llamar POST "/api/reservas/prestador/servicios/$S_CAMINATA/disponibilidad" "$TP" "{\"desde\":\"$D1\",\"hasta\":\"$(dia 30)\",\"cupos\":10,\"hora\":\"07:00\",\"diasSemana\":[\"SATURDAY\",\"SUNDAY\"]}"
+}
+[ "$FASE" != todo ] && [ "$FASE" != basico ] && preparar_fechas
 
 if [ "$FASE" = todo ] || [ "$FASE" = basico ]; then
 echo "=== A. Disponibilidad (RF018, RF034) ==="
@@ -174,7 +183,7 @@ seq 1 40 | xargs -P 40 -I{} curl -s -o /dev/null -w "%{http_code}\n" -X POST "$G
   -H "Authorization: Bearer $TC" --data-binary "{\"idDisponibilidad\":$DISPX,\"personas\":1}" > "$TMP/conc"
 OK201=$(grep -c '^201$' "$TMP/conc"); R409=$(grep -c '^409$' "$TMP/conc"); OTROS=$(grep -vcE '^(201|409)$' "$TMP/conc")
 DESPUES=$(sql "select cupos_reservados || '/' || cupos_totales from disponibilidad where id=$DISPX")
-FILAS=$(sql "select count(*) from detalle_reserva where id_disponibilidad=$DISPX")
+FILAS=$(sql "select count(*) from detalle_reserva d join reserva r on r.id=d.id_reserva where d.id_disponibilidad=$DISPX and r.estado in ('PENDIENTE','CONFIRMADA','COMPLETADA')")
 echo "  respuestas: $OK201 creadas (201), $R409 sin cupos (409), $OTROS otras  | cupos antes: $ANTES, despues: $DESPUES | reservas en BD: $FILAS"
 COD=x; RESP='{}'
 if [ "$OK201" = "$((5-ANTES))" ] && [ "$OTROS" = 0 ] && [ "$DESPUES" = "5/5" ] && [ "$FILAS" = "5" ]; then
@@ -234,5 +243,8 @@ if [ "$DESCUADRES" = 0 ]; then PASA=$((PASA+1)); echo "  OK     $TOTAL, 0 descua
 else FALLA=$((FALLA+1)); echo "  FALLO  $DESCUADRES fechas con cupos descuadrados"; fi
 
 echo
+for s in $S_MINCA1 $S_MINCA2 $S_CAMINATA $S_HOTEL $S_MARISCOS; do   # no ensuciar el catálogo de la demo
+  llamar PATCH "/api/oferta/prestador/servicios/$s/estado" "$TP" '{"activo":false}'
+done
 echo "RESULTADO: $PASA correctas, $FALLA con fallas"
 rm -rf "$TMP"

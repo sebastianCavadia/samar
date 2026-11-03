@@ -43,6 +43,28 @@ export const ESTADOS_RESERVA = {
   CANCELADA: { texto: 'Cancelada', clase: 'apagada' },
 }
 
+export const TIPOS_PRESTADOR = { HOTEL: 'Hotel u hospedaje', RESTAURANTE: 'Restaurante', AGENCIA_TURISTICA: 'Agencia turística' }
+
+export const ESTADOS_CUENTA = {
+  ACTIVO: { texto: 'Activa', clase: 'ok' },
+  INACTIVO: { texto: 'Inactiva', clase: 'apagada' },
+  BLOQUEADO: { texto: 'Bloqueada', clase: 'error' },
+}
+
+export const ESTADOS_VALIDACION = {
+  PENDIENTE: { texto: 'Pendiente', clase: 'aviso' },
+  VALIDADO: { texto: 'Validado', clase: 'ok' },
+  RECHAZADO: { texto: 'Rechazado', clase: 'error' },
+}
+
+export const ACCIONES_ADMIN = {
+  VALIDAR_PRESTADOR: 'Validó al prestador',
+  RECHAZAR_PRESTADOR: 'Rechazó la solicitud',
+  CAMBIAR_ESTADO: 'Cambió el estado',
+  EDITAR_DATOS: 'Editó los datos',
+  CREAR_ADMINISTRADOR: 'Creó la cuenta de administrador',
+}
+
 // RF040: el motivo se elige de una lista
 export const MOTIVOS_TURISTA = ['Cambio de planes', 'Problemas de salud', 'Condiciones del clima', 'Encontré otra opción', 'Otro motivo']
 export const MOTIVOS_PRESTADOR = ['Cierre por clima o fuerza mayor', 'Cierre del parque o zona', 'No hay personal disponible', 'Error en los cupos publicados', 'Otro motivo']

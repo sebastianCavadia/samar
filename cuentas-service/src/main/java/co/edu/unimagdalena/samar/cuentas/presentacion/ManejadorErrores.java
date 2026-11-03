@@ -2,6 +2,7 @@ package co.edu.unimagdalena.samar.cuentas.presentacion;
 
 import co.edu.unimagdalena.samar.cuentas.servicio.excepcion.AccesoDenegadoException;
 import co.edu.unimagdalena.samar.cuentas.servicio.excepcion.CredencialesInvalidasException;
+import co.edu.unimagdalena.samar.cuentas.servicio.excepcion.DatosInvalidosException;
 import co.edu.unimagdalena.samar.cuentas.servicio.excepcion.RecursoNoEncontradoException;
 import co.edu.unimagdalena.samar.cuentas.servicio.excepcion.ReglaNegocioException;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,11 @@ class ManejadorErrores {
   @ExceptionHandler(ReglaNegocioException.class)
   ProblemDetail reglaNegocio(ReglaNegocioException e) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+  }
+
+  @ExceptionHandler(DatosInvalidosException.class)
+  ProblemDetail datosInvalidos(DatosInvalidosException e) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
   }
 
   @ExceptionHandler(RecursoNoEncontradoException.class)

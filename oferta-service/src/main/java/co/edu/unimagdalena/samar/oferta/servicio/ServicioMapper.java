@@ -50,7 +50,7 @@ final class ServicioMapper {
     Integer capacidad = (s instanceof Hospedaje h) ? h.getCapacidadPersonas() : null;
     Integer edadMinima = (s instanceof ActividadTuristica a) ? a.getEdadMinima() : null;
     return new ServicioInternoResponse(s.getId(), s.getIdPrestador(), s.getTipo().name(),
-        s.getNombre(), s.getModalidad().name(), s.getPrecioBase(), s.getMoneda(), s.isActivo(),
+        s.getNombre(), s.getModalidad().name(), s.getPrecioBase(), s.getMoneda(), s.esVisible(), // ADR-13: reservas no acepta los de prestadores suspendidos
         capacidad, edadMinima);
   }
 

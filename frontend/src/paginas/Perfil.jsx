@@ -1,4 +1,5 @@
-import { BadgeCheck, Clock, Mail, ShieldAlert, UserRound } from 'lucide-react'
+import { BadgeCheck, Briefcase, Clock, Mail, UserRound } from 'lucide-react'
+import AvisoValidacion from '../componentes/AvisoValidacion'
 import { ROLES, fecha, iniciales } from '../formato'
 
 export default function Perfil({ usuario: u }) {
@@ -16,17 +17,15 @@ export default function Perfil({ usuario: u }) {
           </div>
         </div>
 
-        {u.prestadorValidado === false && (
-          <div className="mensaje aviso">
-            <ShieldAlert size={20} aria-hidden="true" />
-            <span><strong>Validación pendiente</strong>Un administrador está revisando tu NIT y RNT. Podrás publicar servicios cuando termine.</span>
-          </div>
-        )}
+        <AvisoValidacion usuario={u} />
 
         <div className="datos">
           <div className="dato"><Mail size={20} aria-hidden="true" /><div><small>Correo</small><span>{u.correo}</span></div></div>
           <div className="dato"><UserRound size={20} aria-hidden="true" /><div><small>Rol</small><span>{ROLES[u.rol] ?? u.rol}</span></div></div>
           <div className="dato"><Clock size={20} aria-hidden="true" /><div><small>Último acceso</small><span>{fecha(u.ultimoAcceso)}</span></div></div>
+          {u.areaResponsable && (
+            <div className="dato"><Briefcase size={20} aria-hidden="true" /><div><small>Área responsable</small><span>{u.areaResponsable}</span></div></div>
+          )}
           {u.prestadorValidado && (
             <div className="dato"><BadgeCheck size={20} aria-hidden="true" /><div><small>Verificación</small><span>Prestador validado</span></div></div>
           )}

@@ -70,8 +70,39 @@ Estas son las decisiones que se tomaron al empezar la construcción.
   rechaza con 503: **falla cerrada**, es mejor no publicar que publicar sin validar.
 - **Consecuencia:** El catálogo nunca llama a cuentas: buscar sigue funcionando aunque cuentas esté
   caído (verificado apagando el contenedor). Editar o desactivar tampoco dependen de cuentas.
-  Pendiente: si un administrador desactiva a un prestador ya validado, sus ofertas deberán
-  ocultarse con un job de sincronización o un evento.
+  El caso de un prestador validado que luego se desactiva lo resuelve el ADR-13.
+
+## ADR-13: Las ofertas de un prestador desactivado se ocultan por sincronización periódica
+
+- **Estado:** Aceptada.
+- **Contexto:** Si el administrador desactiva o bloquea a un prestador (RF093), sus servicios no
+  deben seguir en el catálogo ni poder reservarse. Cuentas no puede avisarle a oferta, porque
+  invertiría la dirección de dependencias (ADR-08), y consultar a cuentas en cada búsqueda haría
+  el catálogo lento y dependiente de cuentas.
+- **Decisión:** Cada minuto (`SINCRONIZACION_MS`) oferta pide a cuentas la lista completa de
+  prestadores no activos (`GET /internal/prestadores/suspendidos`) y marca `prestador_suspendido`
+  en sus servicios con un `UPDATE` directo. El catálogo, el detalle público y la consulta interna
+  que usa reservas excluyen los servicios suspendidos. La entidad nunca escribe esa columna: si el
+  prestador edita un servicio no lo reactiva por accidente. Si cuentas no responde, se conserva el
+  último estado conocido y se reintenta.
+- **Consecuencia:** **Consistencia eventual**: el cambio tarda hasta un minuto en verse. Verificado
+  en Docker: al desactivar al prestador sus servicios salieron del catálogo, el detalle dio 404 y
+  reservar dio 409; al reactivarlo volvieron (`pruebas/e2e-admin.sh`). Un evento por mensajería
+  (RabbitMQ o Kafka) lo haría inmediato, a cambio de más infraestructura.
+
+## ADR-14: "Asignar rol" (RF093) se limita a cambiar el estado y crear administradores
+
+- **Estado:** Aceptada.
+- **Contexto:** Turista, prestador y administrador guardan datos distintos (documento y fecha de
+  nacimiento; NIT y RNT; área responsable) en tablas distintas (herencia JOINED). Convertir un
+  turista en prestador dejaría campos obligatorios vacíos y saltaría la validación de RF095.
+- **Decisión:** El administrador activa, desactiva o bloquea cuentas, siempre con motivo
+  (RF093, RF097) y aviso por correo (RF100), y crea otros administradores con su área (RF099).
+  Quien necesite otro rol se registra con ese tipo de cuenta.
+- **Consecuencia:** Cada acción queda en `bitacora_admin` con el área del administrador. Un
+  administrador desactivado no puede seguir administrando aunque su token siga vigente, porque cada
+  acción comprueba su estado. Pendiente: el resto de servicios sí acepta el token de una cuenta
+  desactivada hasta que expire (60 min); invalidar tokens es parte de RF012.
 
 ## ADR-12: Reservas consulta otros servicios fuera de la transacción y se degrada con control
 

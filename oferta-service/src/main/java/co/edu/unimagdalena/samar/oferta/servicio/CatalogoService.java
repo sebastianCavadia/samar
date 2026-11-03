@@ -55,7 +55,7 @@ public class CatalogoService {
   /** RF074. Un servicio inactivo no existe para el público. */
   @Transactional(readOnly = true)
   public ServicioDetalleResponse detalle(Long id) {
-    return servicios.findByIdAndActivoTrue(id)
+    return servicios.findByIdAndActivoTrueAndPrestadorSuspendidoFalse(id)
         .map(s -> ServicioMapper.aDetalle(s, clock.instant()))
         .orElseThrow(() -> new RecursoNoEncontradoException("Servicio no encontrado"));
   }

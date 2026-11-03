@@ -4,7 +4,7 @@ import { cuentasApi, guardarToken } from '../api/cliente'
 import CampoClave from '../componentes/CampoClave'
 import PanelAcceso from '../componentes/PanelAcceso'
 
-export default function Login({ aviso, alIniciar, irARegistro }) {
+export default function Login({ aviso, alIniciar, irARegistro, irARegistroPrestador }) {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -49,6 +49,9 @@ export default function Login({ aviso, alIniciar, irARegistro }) {
       </form>
       <div className="separador">¿Aún no tienes cuenta?</div>
       <button type="button" className="btn btn-secundario btn-bloque" onClick={irARegistro}>Crear cuenta de turista</button>
+      <button type="button" className="btn-enlace" style={{ alignSelf: 'center' }} onClick={irARegistroPrestador}>
+        ¿Tienes un hotel, restaurante o agencia? Registra tu negocio
+      </button>
     </PanelAcceso>
   )
 }

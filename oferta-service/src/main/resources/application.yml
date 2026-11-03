@@ -18,6 +18,8 @@ spring:
 samar:
   servicios:
     cuentas: ${CUENTAS_URL:http://localhost:8081}
+  oferta:
+    sincronizacion-ms: ${SINCRONIZACION_MS:60000}   # ADR-13: cada cuánto se consultan los prestadores suspendidos
 
 management:
   endpoints:

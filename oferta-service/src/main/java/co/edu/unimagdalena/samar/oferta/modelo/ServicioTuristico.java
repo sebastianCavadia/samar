@@ -55,6 +55,13 @@ public abstract class ServicioTuristico {
   @Column(nullable = false)
   private boolean activo = true;
 
+  /**
+   * ADR-13: la cuenta del prestador está desactivada o bloqueada. Solo lo cambia la sincronización
+   * con cuentas (UPDATE directo), por eso la entidad nunca lo escribe: editar el servicio no lo reactiva.
+   */
+  @Column(name = "prestador_suspendido", nullable = false, insertable = false, updatable = false)
+  private boolean prestadorSuspendido;
+
   @Column(name = "calificacion_promedio")
   private BigDecimal calificacionPromedio;
 
@@ -125,6 +132,12 @@ public abstract class ServicioTuristico {
   public void setAccesible(boolean accesible) { this.accesible = accesible; }
   public boolean isActivo() { return activo; }
   public void setActivo(boolean activo) { this.activo = activo; }
+  public boolean isPrestadorSuspendido() { return prestadorSuspendido; }
+
+  /** Visible para turistas: publicado por el prestador y con la cuenta del prestador activa. */
+  public boolean esVisible() {
+    return activo && !prestadorSuspendido;
+  }
   public BigDecimal getCalificacionPromedio() { return calificacionPromedio; }
   public int getTotalCalificaciones() { return totalCalificaciones; }
   public Instant getCreadoEn() { return creadoEn; }

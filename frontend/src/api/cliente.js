@@ -41,7 +41,24 @@ export const cuentasApi = {
     api('/api/cuentas/auth/login', { metodo: 'POST', cuerpo: { correo, password } }),
   registrarTurista: (datos) =>
     api('/api/cuentas/auth/registro/turista', { metodo: 'POST', cuerpo: datos }),
+  registrarPrestador: (datos) =>
+    api('/api/cuentas/auth/registro/prestador', { metodo: 'POST', cuerpo: datos }),
   perfil: () => api('/api/cuentas/perfil'),
+}
+
+// Panel del administrador (RF091-RF100)
+export const adminApi = {
+  resumen: () => api('/api/cuentas/admin/resumen'),
+  prestadores: (validacion) => api(`/api/cuentas/admin/prestadores?${aQuery({ validacion })}`),
+  validar: (id) => api(`/api/cuentas/admin/prestadores/${id}/validar`, { metodo: 'POST' }),
+  rechazar: (id, motivo) => api(`/api/cuentas/admin/prestadores/${id}/rechazar`, { metodo: 'POST', cuerpo: { motivo } }),
+  usuarios: (filtros) => api(`/api/cuentas/admin/usuarios?${aQuery(filtros)}`),
+  usuario: (id) => api(`/api/cuentas/admin/usuarios/${id}`),
+  cambiarEstado: (id, estado, motivo) =>
+    api(`/api/cuentas/admin/usuarios/${id}/estado`, { metodo: 'POST', cuerpo: { estado, motivo } }),
+  editar: (id, datos) => api(`/api/cuentas/admin/usuarios/${id}`, { metodo: 'PUT', cuerpo: datos }),
+  crearAdministrador: (datos) => api('/api/cuentas/admin/administradores', { metodo: 'POST', cuerpo: datos }),
+  bitacora: (pagina) => api(`/api/cuentas/admin/bitacora?pagina=${pagina}`),
 }
 
 // Omite filtros vacíos para no mandar "?tipo=&zona=" al backend.

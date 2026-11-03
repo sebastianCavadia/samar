@@ -4,8 +4,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * prestadorValidado es null cuando el usuario no es prestador.
- * fechaNacimiento solo aplica a turistas (reservas la usa para la edad mínima, RF065).
+ * Perfil propio y consulta interna de otros servicios.
+ * prestadorValidado, estadoValidacion y motivoRechazo solo aplican a prestadores (RF095);
+ * fechaNacimiento solo a turistas (reservas la usa para la edad mínima, RF065);
+ * areaResponsable solo a administradores (RF099).
  */
 public record UsuarioResponse(
     Long id,
@@ -17,5 +19,8 @@ public record UsuarioResponse(
     String telefono,
     Instant ultimoAcceso,
     Boolean prestadorValidado,
-    LocalDate fechaNacimiento) {
+    LocalDate fechaNacimiento,
+    String estadoValidacion,
+    String motivoRechazo,
+    String areaResponsable) {
 }

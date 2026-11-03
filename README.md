@@ -88,11 +88,15 @@ curl localhost:8080/api/cuentas/perfil -H "Authorization: Bearer <token>"
 |---|---|
 | Monorepo, docker-compose, bases por servicio | Listo |
 | api-gateway (rutas + JWT) | Listo |
-| cuentas-service: registro turista y prestador, login con bloqueo (RF001-006, RF013), validación de prestadores (RF095) | Listo, es **la plantilla** a copiar |
+| cuentas-service: registro turista y prestador, login con bloqueo (RF001-006, RF013) | Listo, es **la plantilla** a copiar |
+| Panel del administrador: validar o rechazar prestadores con motivo (RF095, RF096), buscar usuarios (RF091), ficha (RF092), activar/desactivar/bloquear con motivo y correo (RF093, RF100), editar datos (RF094), crear administradores con área (RF099), bitácora (RF097). Las ofertas de un prestador desactivado salen del catálogo (ADR-13) | Listo, probado en Docker (`pruebas/e2e-admin.sh`) |
 | oferta-service: registrar/editar servicios (RF016, RF017, RF023-026), activar/desactivar (RF032), catálogo con búsqueda, filtros y paginación (RF073, RF074, RF077, RF082), solo prestadores validados publican (RF085) | Listo |
 | reservas-service: cupos por fecha (RF018, RF034, RF035), reservar con precio fijado y validaciones (RF036, RF047, RF064-RF066), pago simulado o con comprobante (RF043, RF044, RF055), confirmar/rechazar/cancelar con reembolso (RF038, RF040, RF045), expiración y completado automáticos (RF049, RF056), bitácora (RF057) | Listo, probado en Docker (`pruebas/e2e-reservas.sh`) |
 | recomendaciones: capas, esquema Flyway, regla de capas | Esqueleto, falta la lógica |
-| frontend: login, registro, catálogo con filtros y detalle, panel "Mis servicios" del prestador | Listo para estos casos de uso |
+| frontend: login, registro de turista y de negocio, catálogo y detalle, reservar y "Mis reservas", panel del prestador (servicios, fechas y cupos, reservas recibidas), panel del administrador | Listo para estos casos de uso |
+
+Pendiente en administración: moderar fotos o contenido de un servicio (RF094, segunda parte), preguntas
+frecuentes (RF098), PQRS (RF015, pendiente de decidir si entra) e invalidar tokens al desactivar (RF012).
 
 Pendiente en oferta: subida de archivos de imagen (RF019; hoy se registran URLs con texto alternativo),
 tarifas por temporada (RF027), parqueo (RF028), vista previa (RF029), SEO (RF031), certificaciones (RF033)
@@ -142,6 +146,16 @@ servicios. Incluye **40 reservas simultáneas sobre 5 cupos**: deben resultar ex
 35 rechazos, sin sobreventa. Al final comprueba en la base que, en todas las fechas, los cupos
 reservados coinciden con las reservas que los ocupan. La fase `tiempo` prueba la expiración y el
 completado automáticos; requiere arrancar reservas con `EXPIRACION_SIN_PAGO_MIN=1 TAREA_MS=5000`.
+Cada corrida crea sus propios servicios de prueba y al final los desactiva, así que se puede repetir.
+
+```bash
+bash pruebas/e2e-admin.sh
+```
+
+Prueba el panel del administrador: validar y rechazar prestadores, buscar, bloquear y reactivar
+cuentas, editar, crear administradores y la bitácora. Al final desactiva a un prestador y comprueba
+que sus servicios salen del catálogo y vuelven al reactivarlo (ADR-13). Para que no tarde hasta un
+minuto en verse: `SINCRONIZACION_MS=5000 docker compose up -d oferta-service`.
 
 Cuentas de demo (clave `ClaveSegura1`): turista `ana@demo.co`, prestador validado `tours@demo.co`,
 prestador sin validar `hostal@demo.co`. Administrador: `admin@samar.co` / `Admin12345`.

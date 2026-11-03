@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarDays, Eye, EyeOff, LayoutGrid, MapPin, Pencil, Plus, ShieldAlert, Store, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Eye, EyeOff, LayoutGrid, MapPin, Pencil, Plus, Store, TriangleAlert } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
+import AvisoValidacion from '../componentes/AvisoValidacion'
 import Toast from '../componentes/Toast'
 import { TIPOS, UNIDAD_PRECIO, precio } from '../formato'
 import { ICONO_TIPO } from '../iconos'
@@ -79,12 +80,7 @@ export default function MisServicios({ usuario }) {
         </button>
       </div>
 
-      {usuario.prestadorValidado === false && (
-        <div className="mensaje aviso">
-          <ShieldAlert size={20} aria-hidden="true" />
-          <span><strong>Tu cuenta está en revisión</strong>Un administrador está validando tu NIT y RNT. Podrás publicar servicios cuando termine.</span>
-        </div>
-      )}
+      <AvisoValidacion usuario={usuario} />
       {error && <div className="mensaje error" role="alert"><TriangleAlert size={20} aria-hidden="true" />{error}</div>}
 
       <div className="kpis">

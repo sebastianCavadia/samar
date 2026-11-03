@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  CalendarCheck, Compass, Contrast, Inbox, LayoutDashboard, LogIn, LogOut, Menu, Moon, UserPlus, UserRound, X,
+  CalendarCheck, Compass, Contrast, Inbox, LayoutDashboard, LogIn, LogOut, Menu, Moon, ShieldCheck, UserPlus, UserRound, X,
 } from 'lucide-react'
-import { cuentasApi, guardarToken } from './api/cliente'
+import { adminApi, cuentasApi, guardarToken } from './api/cliente'
 import { guardarApariencia, leerApariencia } from './apariencia'
 import Logo from './componentes/Logo'
 import Toast from './componentes/Toast'
@@ -12,8 +12,10 @@ import Login from './paginas/Login'
 import MisReservas from './paginas/MisReservas'
 import MisServicios from './paginas/MisServicios'
 import Perfil from './paginas/Perfil'
+import RegistroPrestador from './paginas/RegistroPrestador'
 import RegistroTurista from './paginas/RegistroTurista'
 import ReservasRecibidas from './paginas/ReservasRecibidas'
+import PanelAdmin from './paginas/admin/PanelAdmin'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -23,6 +25,7 @@ export default function App() {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [servicioAbierto, setServicioAbierto] = useState(null)
   const [reservaNueva, setReservaNueva] = useState(null)
+  const [pendientesAdmin, setPendientesAdmin] = useState(0)
   const [toast, setToast] = useState(null)
   const cerrarToast = useCallback(() => setToast(null), [])
 
@@ -30,6 +33,12 @@ export default function App() {
   useEffect(() => {
     cuentasApi.perfil().then(setUsuario).catch(() => guardarToken(null))
   }, [])
+
+  // RF096: al entrar un administrador se carga cuántos prestadores esperan validación.
+  useEffect(() => {
+    if (usuario?.rol !== 'ADMINISTRADOR') return
+    adminApi.resumen().then((r) => setPendientesAdmin(r.prestadoresPendientes)).catch(() => {})
+  }, [usuario])
 
   function cambiarApariencia(cambio) {
     const nueva = { ...apariencia, ...cambio }
@@ -54,7 +63,7 @@ export default function App() {
     setAviso(null)
     // Si entró para reservar, vuelve al servicio que estaba viendo.
     if (servicioAbierto && u.rol === 'TURISTA') ir('catalogo')
-    else irA(u.rol === 'PRESTADOR' ? 'mis-servicios' : 'catalogo')
+    else irA({ PRESTADOR: 'mis-servicios', ADMINISTRADOR: 'admin' }[u.rol] ?? 'catalogo')
   }
 
   function salir() {
@@ -75,6 +84,8 @@ export default function App() {
     usuario?.rol === 'TURISTA' && { id: 'mis-reservas', texto: 'Mis reservas', Icono: CalendarCheck },
     usuario?.rol === 'PRESTADOR' && { id: 'mis-servicios', texto: 'Mis servicios', Icono: LayoutDashboard },
     usuario?.rol === 'PRESTADOR' && { id: 'reservas-recibidas', texto: 'Reservas', Icono: Inbox },
+    // RF096: el contador avisa al administrador que hay prestadores esperando validación.
+    usuario?.rol === 'ADMINISTRADOR' && { id: 'admin', texto: 'Administración', Icono: ShieldCheck, conteo: pendientesAdmin },
   ].filter(Boolean)
 
   const actual = (id) => (vista === id ? 'page' : undefined)
@@ -94,9 +105,10 @@ export default function App() {
           </button>
 
           <nav className="nav-principal" aria-label="Principal">
-            {enlaces.map(({ id, texto, Icono }) => (
+            {enlaces.map(({ id, texto, Icono, conteo }) => (
               <button key={id} aria-current={actual(id)} onClick={() => irA(id)}>
                 <Icono size={18} aria-hidden="true" /> {texto}
+                {conteo > 0 && <span className="conteo aviso" aria-label={`${conteo} pendientes`}>{conteo}</span>}
               </button>
             ))}
           </nav>
@@ -136,9 +148,10 @@ export default function App() {
         </div>
 
         <div id="menu-movil" className="menu-movil" data-abierto={menuAbierto}>
-          {enlaces.map(({ id, texto, Icono }) => (
+          {enlaces.map(({ id, texto, Icono, conteo }) => (
             <button key={id} className="btn btn-fantasma" aria-current={actual(id)} onClick={() => irA(id)}>
               <Icono size={18} aria-hidden="true" /> {texto}
+              {conteo > 0 && <span className="conteo aviso" aria-label={`${conteo} pendientes`}>{conteo}</span>}
             </button>
           ))}
           {usuario ? (
@@ -164,13 +177,26 @@ export default function App() {
         {vista === 'mis-servicios' && usuario && <MisServicios usuario={usuario} />}
         {vista === 'reservas-recibidas' && usuario && <ReservasRecibidas />}
         {vista === 'perfil' && usuario && <Perfil usuario={usuario} />}
+        {vista === 'admin' && usuario && <PanelAdmin usuario={usuario} alCambiarPendientes={setPendientesAdmin} />}
         {vista === 'login' && !usuario && (
-          <Login aviso={aviso} alIniciar={iniciar} irARegistro={() => { setAviso(null); ir('registro') }} />
+          <Login aviso={aviso} alIniciar={iniciar} irARegistro={() => { setAviso(null); ir('registro') }}
+            irARegistroPrestador={() => { setAviso(null); ir('registro-prestador') }} />
         )}
         {vista === 'registro' && !usuario && (
           <RegistroTurista
             alRegistrar={() => { setAviso('Tu cuenta fue creada. Ya puedes iniciar sesión.'); ir('login') }}
             irALogin={() => ir('login')}
+            irARegistroPrestador={() => ir('registro-prestador')}
+          />
+        )}
+        {vista === 'registro-prestador' && !usuario && (
+          <RegistroPrestador
+            alRegistrar={() => {
+              setAviso('Solicitud enviada. Ya puedes iniciar sesión; publicarás cuando un administrador valide tu NIT y RNT.')
+              ir('login')
+            }}
+            irALogin={() => ir('login')}
+            irARegistroTurista={() => ir('registro')}
           />
         )}
       </main>

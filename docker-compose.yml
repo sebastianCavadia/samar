@@ -39,6 +39,7 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/samar_oferta
       CUENTAS_URL: http://cuentas-service:8081
+      SINCRONIZACION_MS: ${SINCRONIZACION_MS:-60000}
     depends_on:
       postgres:
         condition: service_healthy

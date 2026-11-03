@@ -11,7 +11,7 @@ const VACIO = {
 }
 
 // RF001 + RF002: registro del turista.
-export default function RegistroTurista({ alRegistrar, irALogin }) {
+export default function RegistroTurista({ alRegistrar, irALogin, irARegistroPrestador }) {
   const [datos, setDatos] = useState(VACIO)
   const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
@@ -38,6 +38,10 @@ export default function RegistroTurista({ alRegistrar, irALogin }) {
       <div>
         <h1>Crea tu cuenta</h1>
         <p className="subtitulo">Regístrate como turista para reservar y recibir recomendaciones.</p>
+      </div>
+      <div className="selector-cuenta" role="group" aria-label="Tipo de cuenta">
+        <button type="button" aria-pressed="true">Soy turista</button>
+        <button type="button" onClick={irARegistroPrestador}>Tengo un negocio</button>
       </div>
       <form className="pila" onSubmit={enviar}>
         <label className="campo">

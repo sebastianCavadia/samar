@@ -32,11 +32,15 @@ public class PrestadorTuristico extends Usuario {
   private Double latitud;
   private Double longitud;
 
-  @Column(nullable = false)
-  private boolean validado;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "estado_validacion", nullable = false)
+  private EstadoValidacion estadoValidacion = EstadoValidacion.PENDIENTE;
 
   @Column(name = "validado_en")
   private Instant validadoEn;
+
+  @Column(name = "motivo_rechazo")
+  private String motivoRechazo;
 
   /** Solo agencias: idiomas en los que presta servicio su personal guía. */
   @ElementCollection
@@ -48,9 +52,20 @@ public class PrestadorTuristico extends Usuario {
     super(Rol.PRESTADOR);
   }
 
+  /** Se valida una solicitud pendiente o una rechazada que el administrador reconsidera. */
   public void validar(Instant ahora) {
-    this.validado = true;
+    this.estadoValidacion = EstadoValidacion.VALIDADO;
     this.validadoEn = ahora;
+    this.motivoRechazo = null;
+  }
+
+  public void rechazar(String motivo) {
+    this.estadoValidacion = EstadoValidacion.RECHAZADO;
+    this.motivoRechazo = motivo;
+  }
+
+  public boolean isValidado() {
+    return estadoValidacion == EstadoValidacion.VALIDADO;
   }
 
   public TipoPrestador getTipoPrestador() { return tipoPrestador; }
@@ -67,8 +82,9 @@ public class PrestadorTuristico extends Usuario {
   public void setLatitud(Double latitud) { this.latitud = latitud; }
   public Double getLongitud() { return longitud; }
   public void setLongitud(Double longitud) { this.longitud = longitud; }
-  public boolean isValidado() { return validado; }
+  public EstadoValidacion getEstadoValidacion() { return estadoValidacion; }
   public Instant getValidadoEn() { return validadoEn; }
+  public String getMotivoRechazo() { return motivoRechazo; }
   public Set<String> getIdiomasGuia() { return idiomasGuia; }
   public void setIdiomasGuia(Set<String> idiomasGuia) { this.idiomasGuia = idiomasGuia; }
 }

@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * Consulta dinámica del catálogo (RF073/RF077): cada filtro es opcional y solo se agrega
- * si viene. Siempre excluye los servicios inactivos (RF032).
+ * si viene. Siempre excluye los servicios inactivos (RF032) y los de prestadores desactivados (ADR-13).
  */
 public final class ServicioEspecificaciones {
 
@@ -25,6 +25,7 @@ public final class ServicioEspecificaciones {
     return (root, query, cb) -> {
       List<Predicate> condiciones = new ArrayList<>();
       condiciones.add(cb.isTrue(root.get("activo")));
+      condiciones.add(cb.isFalse(root.get("prestadorSuspendido"))); // ADR-13
 
       if (texto != null) {
         // Insensible a mayúsculas (RF073). Busca en nombre, descripción y zona.

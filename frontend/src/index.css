@@ -571,6 +571,61 @@ textarea.control { resize: vertical; min-height: 96px; }
 .separador { display: flex; align-items: center; gap: 12px; color: var(--texto-2); font-size: 14px; }
 .separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
 
+/* Selector "Soy turista / Tengo un negocio" en los registros */
+.selector-cuenta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--radio-sm); background: var(--superficie-2); border: 1px solid var(--borde); }
+.selector-cuenta button { font: inherit; font-weight: 600; font-size: 14.5px; padding: 9px; border: 0; border-radius: 8px; background: none; color: var(--texto-2); cursor: pointer; }
+.selector-cuenta button[aria-pressed='true'] { background: var(--superficie); color: var(--primario); box-shadow: var(--sombra); }
+.grupo-campos { display: flex; flex-direction: column; gap: 12px; }
+.grupo-campos legend { display: inline-flex; align-items: center; gap: 6px; }
+.grupo-campos .fila { align-items: flex-end; }
+
+/* ---------- Panel del administrador (mockups 2 y 3) ---------- */
+.conteo.aviso { background: var(--aviso-tenue); color: var(--aviso); border-color: transparent; font-weight: 700; }
+.chip[aria-checked='true'] { background: var(--primario); border-color: var(--primario); color: var(--primario-texto); }
+.barra-busqueda-admin { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.barra-busqueda-admin > select { width: auto; flex: 1 1 150px; }
+.barra-busqueda-admin > .btn { flex: 0 0 auto; }
+.admin-layout { display: grid; gap: 16px; align-items: start; }
+@media (min-width: 960px) {
+  .admin-layout.con-seleccion { grid-template-columns: minmax(0, 1.1fr) minmax(360px, 1fr); }
+  .ficha-admin { position: sticky; top: 92px; max-height: calc(100vh - 110px); overflow-y: auto; }
+}
+@media (max-width: 959px) {
+  .admin-layout.con-seleccion .lista-admin { display: none; }
+}
+.lista-admin { padding: 0; overflow: hidden; }
+.lista-admin ul { list-style: none; margin: 0; padding: 0; }
+.fila-admin {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; font: inherit; color: var(--texto);
+  padding: 14px 18px; background: none; border: 0; border-top: 1px solid var(--borde); cursor: pointer;
+}
+.lista-admin li:first-child .fila-admin { border-top: 0; }
+.fila-admin:hover { background: var(--superficie-2); }
+.fila-admin[aria-pressed='true'] { background: var(--primario-tenue); box-shadow: inset 3px 0 0 var(--primario); }
+.fila-admin .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ficha-admin { display: flex; flex-direction: column; gap: 18px; }
+.ficha-admin h2 { font-size: 20px; }
+.ficha-admin .solo-movil { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+/* En escritorio la lista sigue visible al lado: no hace falta "Volver a la lista" (va después para ganar). */
+@media (min-width: 960px) { .ficha-admin .solo-movil { display: none; } }
+.datos-ficha { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px 16px; padding: 14px 0; border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
+.dato-ficha { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dato-ficha small { font-size: 12px; font-weight: 700; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.dato-ficha span { overflow-wrap: anywhere; }
+.seccion-ficha { padding-top: 4px; }
+.titulo-seccion { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; }
+.linea-tiempo { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--borde); display: flex; flex-direction: column; gap: 12px; }
+.linea-tiempo li { position: relative; display: flex; flex-direction: column; gap: 2px; }
+.linea-tiempo li::before { content: ''; position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 999px; background: var(--primario); }
+.lista-bitacora { list-style: none; margin: 0; padding: 0; }
+.lista-bitacora li { display: grid; grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 16px; padding: 14px 20px; border-top: 1px solid var(--borde); align-items: baseline; }
+.lista-bitacora li:first-child { border-top: 0; }
+.lista-bitacora .detalle { grid-column: 2 / -1; }
+@media (max-width: 700px) {
+  .lista-bitacora li { grid-template-columns: 1fr; }
+  .lista-bitacora .detalle { grid-column: auto; }
+}
+
 /* ---------- Panel del prestador ---------- */
 .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .kpi { display: flex; align-items: center; gap: 14px; padding: 18px; }
