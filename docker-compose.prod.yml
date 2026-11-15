@@ -1,0 +1,149 @@
+# Producción: Caddy sirve la SPA y hace de proxy /api. Postgres y el gateway NO se publican.
+# Uso:
+#   cp .env.example .env        # completar dominio y secretos
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   SEED_BD=1 bash pruebas/seed-demo.sh   # lee SAMAR_DOMINIO y ADMIN_* de .env
+name: samar-prod
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: samar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      CUENTAS_DB_PASSWORD: ${CUENTAS_DB_PASSWORD:?define CUENTAS_DB_PASSWORD en .env}
+      OFERTA_DB_PASSWORD: ${OFERTA_DB_PASSWORD:?define OFERTA_DB_PASSWORD en .env}
+      RESERVAS_DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?define RESERVAS_DB_PASSWORD en .env}
+      RECOMENDACIONES_DB_PASSWORD: ${RECOMENDACIONES_DB_PASSWORD:?define RECOMENDACIONES_DB_PASSWORD en .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [samar]
+
+  cuentas-service:
+    build:
+      context: .
+      dockerfile: cuentas-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_cuentas
+      DB_USER: cuentas
+      DB_PASSWORD: ${CUENTAS_DB_PASSWORD:?}
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en .env}
+      ADMIN_CORREO: ${ADMIN_CORREO:-admin@samar.co}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?define ADMIN_PASSWORD en .env}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m}
+      TZ: America/Bogota
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [samar]
+
+  oferta-service:
+    build:
+      context: .
+      dockerfile: oferta-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_oferta
+      DB_USER: oferta
+      DB_PASSWORD: ${OFERTA_DB_PASSWORD:?}
+      CUENTAS_URL: http://cuentas-service:8081
+      SINCRONIZACION_MS: ${SINCRONIZACION_MS:-5000}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m}
+      TZ: America/Bogota
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [samar]
+
+  reservas-service:
+    build:
+      context: .
+      dockerfile: reservas-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_reservas
+      DB_USER: reservas
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?}
+      CUENTAS_URL: http://cuentas-service:8081
+      OFERTA_URL: http://oferta-service:8082
+      EXPIRACION_SIN_PAGO_MIN: ${EXPIRACION_SIN_PAGO_MIN:-1440}
+      TAREA_MS: ${TAREA_MS:-5000}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m}
+      TZ: America/Bogota
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [samar]
+
+  recomendaciones-service:
+    build:
+      context: .
+      dockerfile: recomendaciones-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/samar_recomendaciones
+      DB_USER: recomendaciones
+      DB_PASSWORD: ${RECOMENDACIONES_DB_PASSWORD:?}
+      OFERTA_URL: http://oferta-service:8082
+      RESERVAS_URL: http://reservas-service:8083
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m}
+      TZ: America/Bogota
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [samar]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?}
+      CUENTAS_URL: http://cuentas-service:8081
+      OFERTA_URL: http://oferta-service:8082
+      RESERVAS_URL: http://reservas-service:8083
+      RECOMENDACIONES_URL: http://recomendaciones-service:8084
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m}
+      TZ: America/Bogota
+    depends_on:
+      - cuentas-service
+      - oferta-service
+      - reservas-service
+      - recomendaciones-service
+    networks: [samar]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SAMAR_DOMINIO: ${SAMAR_DOMINIO:?define SAMAR_DOMINIO en .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api-gateway
+    networks: [samar]
+
+networks:
+  samar:
+    driver: bridge
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

@@ -1,5 +1,10 @@
 **/target
 **/node_modules
+**/bin
 frontend
 .git
+.github
 docs
+pruebas
+.env
+.env.*

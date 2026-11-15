@@ -172,8 +172,43 @@ reserva (debe contar una sola), filtro por estrellas, respuesta del prestador, o
 reparación de la copia local (ADR-11). Para que las reservas se completen rápido:
 `TAREA_MS=5000 docker compose up -d reservas-service`.
 
-Cuentas de demo (clave `ClaveSegura1`): turista `ana@demo.co`, prestador validado `tours@demo.co`,
-prestador sin validar `hostal@demo.co`. Administrador: `admin@samar.co` / `Admin12345`.
+Las cuentas de demo las crea `pruebas/seed-demo.sh` (clave `ClaveSegura1`): turista `ana@demo.co`,
+turista `laura@demo.co` (sin fecha de nacimiento para las pruebas de edad mínima), prestador validado
+`tours@demo.co` y prestador pendiente `hostal@demo.co`. El administrador lo crea cuentas-service al
+primer arranque con `ADMIN_CORREO` / `ADMIN_PASSWORD` (por defecto `admin@samar.co` / `Admin12345`).
+
+## Despliegue en producción
+
+La guía paso a paso (VM, dominio, primer despliegue y cómo publicar cada cambio) está en
+[docs/despliegue.md](docs/despliegue.md). El compose de producción sirve la SPA con Caddy y deja
+Postgres y el gateway en la red interna. En resumen, en la VM:
+
+```bash
+bash infra/preparar-vm.sh             # una sola vez: Docker, swap y firewall
+cp .env.example .env                  # completar dominio y secretos
+bash desplegar.sh                        # git pull, construye y reinicia solo lo que cambió
+SEED_BD=1 bash pruebas/seed-demo.sh   # una sola vez: datos demo (lee SAMAR_DOMINIO y ADMIN_* de .env)
+```
+
+- **Dominio:** apuntar `SAMAR_DOMINIO` (por ejemplo `samar.duckdns.org`) a la IP de la VM. Caddy
+  obtiene el certificado HTTPS automáticamente. Abrir solo los puertos 80 y 443.
+- **Firewall:** además de la lista de seguridad del proveedor, abrir 80/443 en el firewall de la VM
+  (`sudo ufw allow 80,443/tcp` en Ubuntu; en Oracle también hay reglas de iptables).
+- **Secretos:** cambiar `JWT_SECRET`, `ADMIN_PASSWORD` y las claves de Postgres antes del primer
+  arranque. Las claves de Postgres solo se aplican cuando el volumen está vacío.
+- **Seed:** crear los datos demo una sola vez. En la VM hace falta `SEED_BD=1` para acceder a
+  Postgres por `docker exec`; sin eso se omiten la reserva completada y el ajuste de Laura.
+  En local, con el compose de desarrollo, usar `BASE_URL=http://localhost:8080 bash pruebas/seed-demo.sh`.
+- **Admin:** el administrador inicial se crea solo si no existe ninguno. Si cambiás `ADMIN_PASSWORD`
+  después del primer arranque, el admin anterior no se actualiza.
+- **Demo:** `EXPIRACION_SIN_PAGO_MIN=1440`, `TAREA_MS=5000` y `SINCRONIZACION_MS=5000` dejan la
+  expiración, el completado y la suspensión de ofertas con tiempos cómodos. Para probar la
+  expiración rápido, usar `EXPIRACION_SIN_PAGO_MIN=1` y reiniciar `reservas-service`.
+- **Datos:** `docker compose -f docker-compose.prod.yml down` conserva el volumen; `down -v` lo
+  borra. `bash infra/respaldar.sh` guarda las cuatro bases en `~/respaldos` (programarlo con cron).
+- **Logs:** `docker compose -f docker-compose.prod.yml logs -f`.
+- **Si Oracle no permite crear la VM:** usar Azure for Students o un VPS pequeño; el compose es el
+  mismo. Para un dominio propio, cambiar `SAMAR_DOMINIO` y volver a levantar `frontend`.
 
 ## Cómo agregar una funcionalidad (ejemplo: RF016 registrar servicio en oferta)
 

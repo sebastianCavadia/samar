@@ -1,0 +1,35 @@
+# Sirve la SPA y reenvía /api al gateway. El dominio se toma de SAMAR_DOMINIO.
+# En local, sin SAMAR_DOMINIO, usa "localhost" con el CA interno de Caddy.
+{$SAMAR_DOMINIO:localhost} {
+	encode gzip
+
+	# Sin HSTS a propósito: en local fijaría https para todo "localhost", incluido el Vite de desarrollo.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Vite pone un hash en el nombre de cada archivo de /assets: se pueden guardar en caché un año.
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+
+	handle /api/* {
+		reverse_proxy api-gateway:8080
+	}
+
+	handle /actuator/health {
+		reverse_proxy api-gateway:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
