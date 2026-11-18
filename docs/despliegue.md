@@ -142,3 +142,13 @@ Mientras un servicio se reinicia, sus páginas pueden fallar unos segundos.
   `free -h` o usa una VM con más RAM.
 - **No puedo entrar como administrador:** el admin se crea solo en el primer arranque, con el
   `ADMIN_PASSWORD` que había en ese momento.
+
+## Notas
+
+- **Datos demo:** en la VM hace falta `SEED_BD=1` para que el script acceda a Postgres por
+  `docker exec`; sin eso se omiten la reserva completada, las reseñas y el ajuste de Laura. En local,
+  con el compose de desarrollo: `BASE_URL=http://localhost:8080 bash pruebas/seed-demo.sh`.
+- **Tiempos de la demo:** `EXPIRACION_SIN_PAGO_MIN=1440`, `TAREA_MS=5000` y `SINCRONIZACION_MS=5000`
+  dejan la expiración, el completado y la suspensión de ofertas con tiempos cómodos. Para probar la
+  expiración rápido, usar `EXPIRACION_SIN_PAGO_MIN=1` y reiniciar `reservas-service`.
+- **Otro dominio:** cambiar `SAMAR_DOMINIO` en `.env` y volver a levantar `frontend`.
