@@ -1,5 +1,7 @@
 # Especificación de Requisitos de Software (SRS)
 
+> **Nota (versión vigente de los requisitos funcionales):** la sección 3.1 de este documento conserva la numeración de la primera versión. Los requisitos funcionales vigentes son los de [requisitos_funcionales_SAMAR_v3.md](requisitos_funcionales_SAMAR_v3.md) (RF001 a RF100), que reemplazan a los de la sección 3.1; los cambios se explican en [auditoria_SAMAR.md](auditoria_SAMAR.md). El resto del documento (alcance, restricciones, requisitos no funcionales, interfaces) sigue vigente.
+
 **Norma IEEE/ISO/IEC 29148:2018**
 
 **Proyecto:** Plataforma Digital para la Gestión Integrada y Sostenible del Turismo en Santa Marta
