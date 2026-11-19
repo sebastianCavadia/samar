@@ -1,18 +1,41 @@
 import { useEffect, useState } from 'react'
-import { Accessibility, Banknote, LayoutGrid, MapPin, RotateCcw, Search, SearchX, TriangleAlert, X } from 'lucide-react'
+import { Accessibility, Banknote, History, LayoutGrid, MapPin, RotateCcw, Salad, Search, SearchX, TriangleAlert, X } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
 import Paginacion from '../componentes/Paginacion'
 import TarjetaServicio, { TarjetaEsqueleto } from '../componentes/TarjetaServicio'
-import { CATEGORIAS, TIPOS, precio } from '../formato'
+import { CATEGORIAS, DIETAS, TIPOS, precio } from '../formato'
 import { ICONO_CATEGORIA } from '../iconos'
 import DetalleServicio from './DetalleServicio'
 
-const FILTROS_VACIOS = { q: '', tipo: '', categoria: '', zona: '', precioMax: '', accesible: false }
+const FILTROS_VACIOS = { q: '', tipo: '', categoria: '', zona: '', precioMax: '', accesible: false, dieta: '' }
 const TEXTO_VACIO = { q: '', zona: '', precioMax: '' }
 const ZONAS = ['Rodadero', 'Taganga', 'Minca', 'Tayrona', 'Centro Histórico', 'Pozos Colorados', 'Bello Horizonte', 'Palomino']
 const POR_PAGINA = 10
 
 const textoLimpio = (b) => ({ q: b.q.trim(), zona: b.zona.trim(), precioMax: b.precioMax })
+
+// RF083: las últimas 3 búsquedas quedan solo en este navegador (almacenamiento local), nunca en el servidor.
+const CLAVE_RECIENTES = 'samar.busquedas'
+const MAX_RECIENTES = 3
+
+function leerRecientes() {
+  try {
+    const guardadas = JSON.parse(localStorage.getItem(CLAVE_RECIENTES))
+    return Array.isArray(guardadas) ? guardadas.slice(0, MAX_RECIENTES) : []
+  } catch {
+    return []
+  }
+}
+
+function conReciente(lista, texto) {
+  const nueva = [texto, ...lista.filter((b) => b.toLowerCase() !== texto.toLowerCase())].slice(0, MAX_RECIENTES)
+  try {
+    localStorage.setItem(CLAVE_RECIENTES, JSON.stringify(nueva))
+  } catch {
+    // almacenamiento no disponible (modo privado): se recuerda solo mientras dure la página
+  }
+  return nueva
+}
 
 // RF073 buscar y filtrar, RF077 listar sin criterios, RF082 "Nuevo". Diseño basado en el mockup 4.
 // El servicio abierto lo guarda App: así, tras iniciar sesión para reservar, se vuelve al mismo servicio.
@@ -25,6 +48,22 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [reintento, setReintento] = useState(0)
+  const [recientes, setRecientes] = useState(leerRecientes)
+  const [sugerir, setSugerir] = useState(false)
+
+  // Se guarda la búsqueda terminada (al enviar o al salir del campo), no cada palabra a medio escribir.
+  function recordar(texto) {
+    const t = texto.trim()
+    if (t) setRecientes((lista) => conReciente(lista, t))
+  }
+
+  function usarReciente(texto) {
+    setBorrador((b) => ({ ...b, q: texto }))
+    setFiltros((f) => ({ ...f, q: texto }))
+    setPagina(0)
+    setSugerir(false)
+    recordar(texto)
+  }
 
   // Busca mientras se escribe, pero sin mandar una petición por cada tecla.
   useEffect(() => {
@@ -51,6 +90,8 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
     e.preventDefault()
     setFiltros((f) => ({ ...f, ...textoLimpio(borrador) }))
     setPagina(0)
+    setSugerir(false)
+    recordar(borrador.q)
   }
 
   function cambiar(campo, valor) {
@@ -85,6 +126,7 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
     filtros.zona && ['zona', filtros.zona],
     filtros.precioMax && ['precioMax', `Hasta ${precio(filtros.precioMax)}`],
     filtros.accesible && ['accesible', 'Accesible'],
+    filtros.dieta && ['dieta', `Apto ${DIETAS[filtros.dieta].toLowerCase()}`],
   ].filter(Boolean)
 
   const total = resultado?.totalElementos ?? 0
@@ -101,7 +143,8 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
             <span className="solo-lectores">Buscar servicios</span>
             <Search size={20} aria-hidden="true" />
             <input className="control" type="search" placeholder="¿Qué servicio, lugar o experiencia buscas?"
-              value={borrador.q} onChange={escribir('q')} />
+              value={borrador.q} onChange={escribir('q')} autoComplete="off"
+              onFocus={() => setSugerir(true)} onBlur={() => { setSugerir(false); recordar(borrador.q) }} />
             {borrador.q && (
               <button type="button" className="btn btn-fantasma btn-icono accion-campo" aria-label="Borrar búsqueda"
                 onClick={() => quitar('q')}>
@@ -110,6 +153,18 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
             )}
           </label>
           <button type="submit" className="btn btn-primario">Buscar</button>
+          {sugerir && !borrador.q && recientes.length > 0 && (
+            <ul className="sugerencias" aria-label="Búsquedas recientes">
+              {recientes.map((b) => (
+                <li key={b}>
+                  {/* onMouseDown: elige antes de que el campo pierda el foco y cierre la lista */}
+                  <button type="button" onMouseDown={(e) => { e.preventDefault(); usarReciente(b) }}>
+                    <History size={16} aria-hidden="true" /> {b}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </form>
         <div className="chips" role="group" aria-label="Explorar por categoría">
           {Object.entries(CATEGORIAS).map(([valor, texto]) => {
@@ -160,6 +215,16 @@ export default function Catalogo({ usuario, servicioAbierto, abrirServicio, alIr
               <select value={filtros.accesible ? 'si' : ''} onChange={(e) => cambiar('accesible', e.target.value === 'si')}>
                 <option value="">Todos</option>
                 <option value="si">Solo accesibles</option>
+              </select>
+            </label>
+          </div>
+          <div className="caja-filtro">
+            <Salad size={20} aria-hidden="true" />
+            <label>
+              Dieta (restaurantes)
+              <select value={filtros.dieta} onChange={(e) => cambiar('dieta', e.target.value)}>
+                <option value="">Cualquiera</option>
+                {Object.entries(DIETAS).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
               </select>
             </label>
           </div>

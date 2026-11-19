@@ -22,6 +22,11 @@
 		reverse_proxy api-gateway:8080
 	}
 
+	# RNF-034: documentación Swagger de cada servicio, publicada por el gateway.
+	handle /docs/* {
+		reverse_proxy api-gateway:8080
+	}
+
 	handle {
 		root * /srv
 		try_files {path} /index.html

@@ -2,6 +2,7 @@ package co.edu.unimagdalena.samar.oferta.servicio;
 
 import co.edu.unimagdalena.samar.oferta.modelo.Categoria;
 import co.edu.unimagdalena.samar.oferta.modelo.ServicioTuristico;
+import co.edu.unimagdalena.samar.oferta.modelo.TipoDieta;
 import co.edu.unimagdalena.samar.oferta.modelo.TipoServicio;
 import co.edu.unimagdalena.samar.oferta.persistencia.ServicioEspecificaciones;
 import co.edu.unimagdalena.samar.oferta.persistencia.ServicioTuristicoRepository;
@@ -41,7 +42,8 @@ public class CatalogoService {
         Enums.opcional(TipoServicio.class, f.tipo(), "tipo"),
         Enums.opcional(Categoria.class, f.categoria(), "categoria"),
         textoOpcional(f.zona()),
-        f.precioMin(), f.precioMax(), f.calificacionMin(), f.accesible());
+        f.precioMin(), f.precioMax(), f.calificacionMin(), f.accesible(),
+        Enums.opcional(TipoDieta.class, f.dieta(), "dieta"));
 
     Page<ServicioTuristico> resultado = servicios.findAll(especificacion,
         PageRequest.of(Math.max(pagina, 0), TAMANO_PAGINA, ordenDe(orden)));

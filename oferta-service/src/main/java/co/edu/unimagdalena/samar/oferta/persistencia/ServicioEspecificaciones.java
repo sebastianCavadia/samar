@@ -1,7 +1,10 @@
 package co.edu.unimagdalena.samar.oferta.persistencia;
 
 import co.edu.unimagdalena.samar.oferta.modelo.*;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -21,7 +24,7 @@ public final class ServicioEspecificaciones {
 
   public static Specification<ServicioTuristico> publicadosCon(String texto, TipoServicio tipo,
       Categoria categoria, String zona, BigDecimal precioMin, BigDecimal precioMax,
-      BigDecimal calificacionMin, Boolean accesible) {
+      BigDecimal calificacionMin, Boolean accesible, TipoDieta dieta) {
     return (root, query, cb) -> {
       List<Predicate> condiciones = new ArrayList<>();
       condiciones.add(cb.isTrue(root.get("activo")));
@@ -55,6 +58,15 @@ public final class ServicioEspecificaciones {
       }
       if (Boolean.TRUE.equals(accesible)) {
         condiciones.add(cb.isTrue(root.get("accesible")));
+      }
+      if (dieta != null) {
+        // RF079: solo restaurantes que declaran esa dieta. Subconsulta porque las dietas
+        // son propias de ServicioGastronomico y la consulta parte de ServicioTuristico.
+        Subquery<Long> conDieta = query.subquery(Long.class);
+        Root<ServicioGastronomico> g = conDieta.from(ServicioGastronomico.class);
+        Join<ServicioGastronomico, TipoDieta> d = g.join("dietas");
+        conDieta.select(g.get("id")).where(cb.equal(g.get("id"), root.get("id")), cb.equal(d, dieta));
+        condiciones.add(cb.exists(conDieta));
       }
       return cb.and(condiciones.toArray(Predicate[]::new));
     };

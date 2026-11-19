@@ -2,7 +2,7 @@ package co.edu.unimagdalena.samar.oferta.servicio.dto;
 
 import java.math.BigDecimal;
 
-/** Parámetros opcionales de búsqueda del catálogo (RF073). Llegan como query params. */
+/** Parámetros opcionales de búsqueda del catálogo (RF073, RF079 dieta). Llegan como query params. */
 public record FiltroBusqueda(
     String q,
     String tipo,
@@ -11,5 +11,6 @@ public record FiltroBusqueda(
     BigDecimal precioMin,
     BigDecimal precioMax,
     BigDecimal calificacionMin,
-    Boolean accesible) {
+    Boolean accesible,
+    String dieta) {
 }

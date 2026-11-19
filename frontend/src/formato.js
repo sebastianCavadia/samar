@@ -99,3 +99,13 @@ export function fechaDia(iso) {
 
 // RF075
 export const TEXTO_ESTRELLAS = { 1: 'Muy malo', 2: 'Malo', 3: 'Regular', 4: 'Bueno', 5: 'Excelente' }
+
+// RF008 y RF019: mismo límite que el servidor (que vuelve a validar por los bytes del archivo).
+export const IMAGEN_MAX_BYTES = 2 * 1024 * 1024
+
+/** Mensaje de error para mostrar, o null si la imagen se puede subir. */
+export function errorImagen(archivo) {
+  if (!['image/jpeg', 'image/png'].includes(archivo.type)) return 'Solo se aceptan imágenes JPEG o PNG.'
+  if (archivo.size > IMAGEN_MAX_BYTES) return 'La imagen supera el tamaño máximo de 2 MB.'
+  return null
+}

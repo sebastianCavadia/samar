@@ -19,11 +19,22 @@ public class RutasConfig {
       @Value("${samar.servicios.oferta}") String oferta,
       @Value("${samar.servicios.reservas}") String reservas,
       @Value("${samar.servicios.recomendaciones}") String recomendaciones) {
-    return builder.routes()
+    var rutas = builder.routes()
         .route("cuentas", r -> r.path("/api/cuentas/**").uri(cuentas))
         .route("oferta", r -> r.path("/api/oferta/**").uri(oferta))
         .route("reservas", r -> r.path("/api/reservas/**").uri(reservas))
-        .route("recomendaciones", r -> r.path("/api/recomendaciones/**").uri(recomendaciones))
-        .build();
+        .route("recomendaciones", r -> r.path("/api/recomendaciones/**").uri(recomendaciones));
+
+    // RNF-034: /docs/{servicio}/... muestra su Swagger. Solo se enrutan las rutas de la documentación,
+    // así /internal/** sigue sin poder alcanzarse desde afuera. StripPrefix(2) quita "/docs/{servicio}";
+    // cada servicio declara ese prefijo en springdoc.swagger-ui para que la página pida bien sus datos.
+    for (String[] servicio : new String[][] {{"cuentas", cuentas}, {"oferta", oferta}, {"reservas", reservas}}) {
+      String base = "/docs/" + servicio[0];
+      rutas = rutas.route("docs-" + servicio[0], r -> r
+          .path(base + "/v3/api-docs/**", base + "/swagger-ui/**", base + "/swagger-ui.html")
+          .filters(f -> f.stripPrefix(2))
+          .uri(servicio[1]));
+    }
+    return rutas.build();
   }
 }

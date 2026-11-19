@@ -71,6 +71,8 @@ public class ProcesosAutomaticosService {
       return false;
     }
     r.cambiarEstado(EstadoReserva.COMPLETADA, null, "Completada: la fecha del servicio ya pasó");
+    notificador.notificar(r.getIdTurista(), "Experiencia completada", // RF039
+        "Tu reserva #" + r.getId() + " de " + r.detallePrincipal().getNombreServicio() + " se completó: ya puedes calificarla");
     return true;
   }
 }

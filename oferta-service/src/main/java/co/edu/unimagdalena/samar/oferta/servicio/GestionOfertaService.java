@@ -21,11 +21,14 @@ public class GestionOfertaService {
 
   private final ServicioTuristicoRepository servicios;
   private final CuentasClient cuentas;
+  private final ImagenService imagenes;
   private final Clock clock;
 
-  public GestionOfertaService(ServicioTuristicoRepository servicios, CuentasClient cuentas, Clock clock) {
+  public GestionOfertaService(ServicioTuristicoRepository servicios, CuentasClient cuentas, ImagenService imagenes,
+      Clock clock) {
     this.servicios = servicios;
     this.cuentas = cuentas;
+    this.imagenes = imagenes;
     this.clock = clock;
   }
 
@@ -52,7 +55,9 @@ public class GestionOfertaService {
     if (!servicio.getTipo().name().equals(req.tipo())) {
       throw new ReglaNegocioException("No se puede cambiar el tipo de un servicio ya registrado");
     }
+    List<String> antes = urlsDe(servicio);
     aplicarDatos(servicio, req);
+    imagenes.eliminarQuitadas(actor.usuarioId(), antes, urlsDe(servicio)); // RF019: quitar de la galería elimina el archivo
     return ServicioMapper.aDetalle(servicio, clock.instant());
   }
 
@@ -88,6 +93,10 @@ public class GestionOfertaService {
       throw new AccesoDenegadoException("Este servicio pertenece a otro prestador");
     }
     return servicio;
+  }
+
+  private static List<String> urlsDe(ServicioTuristico s) {
+    return s.getImagenes().stream().map(ImagenServicio::getUrl).toList();
   }
 
   private void aplicarDatos(ServicioTuristico s, ServicioRequest req) {

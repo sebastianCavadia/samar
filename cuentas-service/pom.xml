@@ -30,6 +30,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- RNF-034: documentación OpenAPI/Swagger de la API -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    </dependency>
     <!-- Solo BCrypt: la autenticación de peticiones la hace el gateway -->
     <dependency>
       <groupId>org.springframework.security</groupId>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { adminApi, cuentasApi, guardarToken, ofertaApi } from './api/cliente'
 import { guardarApariencia, leerApariencia } from './apariencia'
+import Campana from './componentes/Campana'
 import Logo from './componentes/Logo'
 import Toast from './componentes/Toast'
 import { iniciales } from './formato'
@@ -133,6 +134,8 @@ export default function App() {
               <Moon size={19} aria-hidden="true" />
             </button>
 
+            {(usuario?.rol === 'TURISTA' || usuario?.rol === 'PRESTADOR') && <Campana key={usuario.id} />}
+
             {usuario ? (
               <>
                 <button className="usuario-chip solo-escritorio" aria-current={actual('perfil')} onClick={() => ir('perfil')}>
@@ -187,7 +190,7 @@ export default function App() {
         {vista === 'mis-servicios' && usuario && <MisServicios usuario={usuario} />}
         {vista === 'reservas-recibidas' && usuario && <ReservasRecibidas />}
         {vista === 'resenas' && usuario && <ResenasRecibidas alCambiarPendientes={setResenasSinResponder} />}
-        {vista === 'perfil' && usuario && <Perfil usuario={usuario} />}
+        {vista === 'perfil' && usuario && <Perfil usuario={usuario} alActualizar={setUsuario} />}
         {vista === 'admin' && usuario && <PanelAdmin usuario={usuario} alCambiarPendientes={setPendientesAdmin} />}
         {vista === 'login' && !usuario && (
           <Login aviso={aviso} alIniciar={iniciar} irARegistro={() => { setAviso(null); ir('registro') }}

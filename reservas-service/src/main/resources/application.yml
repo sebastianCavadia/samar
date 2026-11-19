@@ -30,3 +30,11 @@ management:
     web:
       exposure:
         include: health
+
+# RNF-034: OpenAPI de las rutas públicas (/internal queda fuera: solo es para otros servicios).
+springdoc:
+  paths-to-match: /api/**
+  # El gateway publica esta documentación en /docs/reservas/: la página de Swagger debe pedir sus datos con ese prefijo.
+  swagger-ui:
+    config-url: /docs/reservas/v3/api-docs/swagger-config
+    url: /docs/reservas/v3/api-docs

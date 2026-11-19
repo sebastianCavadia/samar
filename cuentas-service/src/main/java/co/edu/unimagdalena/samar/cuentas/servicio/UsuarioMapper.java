@@ -14,6 +14,10 @@ final class UsuarioMapper {
   }
 
   static UsuarioResponse aResponse(Usuario u) {
+    return aResponse(u, null);
+  }
+
+  static UsuarioResponse aResponse(Usuario u, Boolean tieneFoto) {
     PrestadorTuristico p = (u instanceof PrestadorTuristico x) ? x : null;
     return new UsuarioResponse(u.getId(), u.getNombre(), u.getCorreo(), u.getRol().name(),
         u.getEstado().name(), u.getIdioma(), u.getTelefono(), u.getUltimoAcceso(),
@@ -21,7 +25,10 @@ final class UsuarioMapper {
         (u instanceof Turista t) ? t.getFechaNacimiento() : null,
         p == null ? null : p.getEstadoValidacion().name(),
         p == null ? null : p.getMotivoRechazo(),
-        (u instanceof Administrador a) ? a.getAreaResponsable() : null);
+        (u instanceof Administrador a) ? a.getAreaResponsable() : null,
+        p == null ? null : p.getDireccion(),
+        p == null ? null : p.getZona(),
+        tieneFoto);
   }
 
   static Admin.UsuarioFila aFila(Usuario u) {

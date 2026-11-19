@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { ArrowLeft, ImageIcon, Save, TriangleAlert } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ArrowLeft, ImageIcon, ImagePlus, Link2, Save, Star, Trash2, TriangleAlert } from 'lucide-react'
 import { ofertaApi } from '../api/cliente'
-import { CATEGORIAS, DESCRIPCION_TIPO, DIETAS, DIFICULTADES, TIPOS } from '../formato'
+import { CATEGORIAS, DESCRIPCION_TIPO, DIETAS, DIFICULTADES, TIPOS, errorImagen } from '../formato'
 import { ICONO_CATEGORIA, ICONO_TIPO } from '../iconos'
 
 const VACIO = {
   tipo: 'ACTIVIDAD', nombre: '', descripcion: '', modalidad: 'RESERVA', precioBase: '',
-  direccion: '', zona: '', accesible: false, categorias: [], imagenUrl: '', imagenAlt: '',
+  direccion: '', zona: '', accesible: false, categorias: [], imagenes: [],
   tipoHabitacion: '', capacidadPersonas: '', horaCheckIn: '', horaCheckOut: '',
   duracionHoras: '', dificultad: 'MEDIA', edadMinima: '', horaInicio: '',
   tipoComida: '', aforo: '', horaApertura: '', horaCierre: '', dietas: [],
@@ -15,14 +15,15 @@ const VACIO = {
 const texto = (v) => (v == null ? '' : String(v))
 const nulo = (v) => (v === '' ? null : v)
 
+const MAX_IMAGENES = 10
+
 function desdeDetalle(d) {
-  const img = d.imagenes[0]
   return {
     ...VACIO,
     tipo: d.tipo, nombre: d.nombre, descripcion: texto(d.descripcion), modalidad: d.modalidad,
     precioBase: texto(d.precioBase), direccion: texto(d.direccion), zona: texto(d.zona),
     accesible: d.accesible, categorias: d.categorias,
-    imagenUrl: img ? img.url : '', imagenAlt: img ? img.descripcion : '',
+    imagenes: d.imagenes.map((i) => ({ url: i.url, descripcion: i.descripcion })),
     ...(d.hospedaje && {
       tipoHabitacion: texto(d.hospedaje.tipoHabitacion), capacidadPersonas: texto(d.hospedaje.capacidadPersonas),
       horaCheckIn: texto(d.hospedaje.horaCheckIn), horaCheckOut: texto(d.hospedaje.horaCheckOut),
@@ -44,7 +45,7 @@ function aRequest(f) {
     tipo: f.tipo, nombre: f.nombre, descripcion: nulo(f.descripcion), modalidad: f.modalidad,
     precioBase: Number(f.precioBase), direccion: f.direccion, zona: f.zona, accesible: f.accesible,
     categorias: f.categorias,
-    imagenes: f.imagenUrl ? [{ url: f.imagenUrl, descripcion: f.imagenAlt }] : [],
+    imagenes: f.imagenes.map((i) => ({ url: i.url.trim(), descripcion: i.descripcion.trim() })),
     hospedaje: f.tipo !== 'HOSPEDAJE' ? null : {
       tipoHabitacion: nulo(f.tipoHabitacion), capacidadPersonas: Number(f.capacidadPersonas),
       horaCheckIn: nulo(f.horaCheckIn), horaCheckOut: nulo(f.horaCheckOut),
@@ -69,12 +70,130 @@ function Campo({ etiqueta, ayuda, children, ancho }) {
   )
 }
 
+function Miniatura({ url }) {
+  const [rota, setRota] = useState(false)
+  if (rota) {
+    return (
+      <div className="miniatura sin-foto" role="img" aria-label="No pudimos cargar esta imagen">
+        <ImageIcon size={26} aria-hidden="true" />
+      </div>
+    )
+  }
+  return <img className="miniatura" src={url} alt="" onError={() => setRota(true)} />
+}
+
+// RF019 subir imágenes (JPEG o PNG, hasta 2 MB) o enlazarlas, y quitarlas. RF021: cada una lleva su
+// descripción para lectores de pantalla. La primera es la foto principal de la tarjeta del catálogo.
+function Galeria({ imagenes, alCambiar }) {
+  const [enlace, setEnlace] = useState('')
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState(null)
+  const entrada = useRef(null)
+  const llena = imagenes.length >= MAX_IMAGENES
+
+  const agregar = (url) => alCambiar([...imagenes, { url, descripcion: '' }])
+  const actualizar = (i, cambio) => alCambiar(imagenes.map((img, j) => (j === i ? { ...img, ...cambio } : img)))
+  const quitar = (i) => alCambiar(imagenes.filter((_, j) => j !== i))
+  const hacerPrincipal = (i) => alCambiar([imagenes[i], ...imagenes.filter((_, j) => j !== i)])
+
+  async function subir(e) {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivo) return
+    const problema = errorImagen(archivo)
+    if (problema) {
+      setError(problema)
+      return
+    }
+    setError(null)
+    setSubiendo(true)
+    try {
+      agregar((await ofertaApi.subirImagen(archivo)).url)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  function agregarEnlace() {
+    const url = enlace.trim()
+    if (!/^https?:\/\/.+/.test(url)) {
+      setError('El enlace debe empezar por https://')
+      return
+    }
+    setError(null)
+    agregar(url)
+    setEnlace('')
+  }
+
+  return (
+    <div className="pila">
+      {imagenes.length > 0 && (
+        <ul className="galeria-form">
+          {imagenes.map((img, i) => (
+            <li key={`${img.url}-${i}`} className="item-galeria">
+              <Miniatura url={img.url} />
+              <div className="pila" style={{ gap: 8, flex: 1, minWidth: 0 }}>
+                {i === 0 && <span className="insignia ok" style={{ alignSelf: 'flex-start' }}><Star size={13} aria-hidden="true" /> Principal</span>}
+                <label className="campo">
+                  <span>Descripción de la foto * <span className="ayuda">· la leen los lectores de pantalla</span></span>
+                  <input className="control" value={img.descripcion} required maxLength={200}
+                    onChange={(e) => actualizar(i, { descripcion: e.target.value })}
+                    placeholder="Ej.: Playa de Cabo San Juan al amanecer" />
+                </label>
+                <div className="fila-botones">
+                  {i > 0 && (
+                    <button type="button" className="btn btn-fantasma" onClick={() => hacerPrincipal(i)}>
+                      <Star size={15} aria-hidden="true" /> Hacer principal
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-fantasma" onClick={() => quitar(i)} aria-label={`Quitar la foto ${i + 1}`}>
+                    <Trash2 size={15} aria-hidden="true" /> Quitar
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {imagenes.length === 0 && (
+        <div className="vacio-galeria suave"><ImageIcon size={26} aria-hidden="true" /> Aún no hay fotos. Los servicios con fotos reciben más reservas.</div>
+      )}
+
+      {llena
+        ? <p className="suave pequeno">Llegaste al máximo de {MAX_IMAGENES} fotos.</p>
+        : (
+          <div className="fila" style={{ alignItems: 'flex-end' }}>
+            <div className="pila" style={{ gap: 6, flex: '0 0 auto' }}>
+              <input ref={entrada} type="file" accept="image/jpeg,image/png" hidden onChange={subir} />
+              <button type="button" className="btn btn-secundario" disabled={subiendo} onClick={() => entrada.current?.click()}>
+                <ImagePlus size={16} aria-hidden="true" /> {subiendo ? 'Subiendo…' : 'Subir foto'}
+              </button>
+              <span className="suave pequeno">JPEG o PNG, máximo 2 MB</span>
+            </div>
+            <label className="campo" style={{ flex: '1 1 260px' }}>
+              <span>O pega un enlace</span>
+              <input className="control" type="url" value={enlace} onChange={(e) => setEnlace(e.target.value)} placeholder="https://…"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarEnlace() } }} />
+            </label>
+            <button type="button" className="btn btn-fantasma" onClick={agregarEnlace} disabled={!enlace.trim()}>
+              <Link2 size={16} aria-hidden="true" /> Agregar enlace
+            </button>
+          </div>
+        )}
+
+      {error && <div className="mensaje error" role="alert"><TriangleAlert size={18} aria-hidden="true" />{error}</div>}
+    </div>
+  )
+}
+
 // RF016 registrar / RF017 editar. "detalle" viene solo al editar.
 export default function FormServicio({ detalle, alGuardar, cancelar }) {
   const [f, setF] = useState(detalle ? desdeDetalle(detalle) : VACIO)
   const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
-  const [imagenRota, setImagenRota] = useState(false)
 
   const cambiar = (campo) => (e) =>
     setF({ ...f, [campo]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
@@ -248,31 +367,8 @@ export default function FormServicio({ detalle, alGuardar, cancelar }) {
         </section>
 
         <section className="seccion-form">
-          <h3><span className="numero-paso">6</span>Foto principal</h3>
-          <div className="fila" style={{ alignItems: 'flex-start' }}>
-            <div className="pila" style={{ flex: '1 1 300px' }}>
-              <Campo etiqueta="Enlace de la imagen" ayuda="https://…">
-                <input className="control" type="url" value={f.imagenUrl}
-                  onChange={(e) => { setImagenRota(false); cambiar('imagenUrl')(e) }} placeholder="https://…" />
-              </Campo>
-              <Campo etiqueta={`Descripción de la foto${f.imagenUrl ? ' *' : ''}`} ayuda="la leen los lectores de pantalla">
-                <input className="control" value={f.imagenAlt} onChange={cambiar('imagenAlt')} required={Boolean(f.imagenUrl)}
-                  maxLength={200} placeholder="Ej.: Playa de Cabo San Juan al amanecer" />
-              </Campo>
-            </div>
-            <div style={{ flex: '1 1 260px' }}>
-              {f.imagenUrl && !imagenRota
-                ? <img className="vista-previa-img" src={f.imagenUrl} alt="Vista previa" onError={() => setImagenRota(true)} />
-                : (
-                  <div className="vista-previa-img sin-foto foto" style={{ display: 'grid', placeItems: 'center', color: 'var(--texto-2)' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <ImageIcon size={32} aria-hidden="true" style={{ margin: '0 auto' }} />
-                      <p className="pequeno">{imagenRota ? 'No pudimos cargar esa imagen' : 'Aquí verás la vista previa'}</p>
-                    </div>
-                  </div>
-                )}
-            </div>
-          </div>
+          <h3><span className="numero-paso">6</span>Fotos <span className="suave pequeno" style={{ fontWeight: 400 }}>· hasta {MAX_IMAGENES}</span></h3>
+          <Galeria imagenes={f.imagenes} alCambiar={(imagenes) => setF({ ...f, imagenes })} />
         </section>
 
         {error && <div className="mensaje error" role="alert"><TriangleAlert size={20} aria-hidden="true" />{error}</div>}

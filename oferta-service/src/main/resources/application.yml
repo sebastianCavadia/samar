@@ -14,6 +14,10 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 2MB      # RF019: imágenes de la galería
+      max-request-size: 3MB
 
 samar:
   servicios:
@@ -26,3 +30,11 @@ management:
     web:
       exposure:
         include: health
+
+# RNF-034: OpenAPI de las rutas públicas (/internal queda fuera: solo es para otros servicios).
+springdoc:
+  paths-to-match: /api/**
+  # El gateway publica esta documentación en /docs/oferta/: la página de Swagger debe pedir sus datos con ese prefijo.
+  swagger-ui:
+    config-url: /docs/oferta/v3/api-docs/swagger-config
+    url: /docs/oferta/v3/api-docs

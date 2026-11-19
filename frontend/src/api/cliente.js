@@ -18,21 +18,38 @@ function leerToken() {
   }
 }
 
-export async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
-  const headers = { 'Content-Type': 'application/json' }
+function cabeceras(extra = {}) {
   const token = leerToken()
-  if (token) headers.Authorization = `Bearer ${token}`
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra
+}
 
+// Un FormData (archivos) viaja tal cual: el navegador pone el Content-Type multipart con su límite.
+export async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
+  const esArchivo = cuerpo instanceof FormData
   const res = await fetch(ruta, {
     method: metodo,
-    headers,
-    body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+    headers: cabeceras(esArchivo ? {} : { 'Content-Type': 'application/json' }),
+    body: esArchivo ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,
   })
   const datos = res.status === 204 ? null : await res.json().catch(() => null)
   if (!res.ok) {
     // ProblemDetail (servicios) usa "detail"; el gateway usa "mensaje"
     throw new Error(datos?.detail || datos?.mensaje || `Error ${res.status}`)
   }
+  return datos
+}
+
+/** Descarga un archivo protegido (la foto de perfil) como blob; null si no existe. */
+async function apiBlob(ruta) {
+  const res = await fetch(ruta, { headers: cabeceras() })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`Error ${res.status}`)
+  return res.blob()
+}
+
+function conArchivo(archivo) {
+  const datos = new FormData()
+  datos.append('archivo', archivo)
   return datos
 }
 
@@ -44,6 +61,12 @@ export const cuentasApi = {
   registrarPrestador: (datos) =>
     api('/api/cuentas/auth/registro/prestador', { metodo: 'POST', cuerpo: datos }),
   perfil: () => api('/api/cuentas/perfil'),
+  // RF008 y RF009
+  editarPerfil: (datos) => api('/api/cuentas/perfil', { metodo: 'PUT', cuerpo: datos }),
+  cambiarPassword: (actual, nueva) => api('/api/cuentas/perfil/password', { metodo: 'PUT', cuerpo: { actual, nueva } }),
+  foto: () => apiBlob('/api/cuentas/perfil/foto'),
+  subirFoto: (archivo) => api('/api/cuentas/perfil/foto', { metodo: 'PUT', cuerpo: conArchivo(archivo) }),
+  eliminarFoto: () => api('/api/cuentas/perfil/foto', { metodo: 'DELETE' }),
 }
 
 // Panel del administrador (RF091-RF100)
@@ -79,6 +102,8 @@ export const ofertaApi = {
   editar: (id, datos) => api(`/api/oferta/prestador/servicios/${id}`, { metodo: 'PUT', cuerpo: datos }),
   cambiarEstado: (id, activo) =>
     api(`/api/oferta/prestador/servicios/${id}/estado`, { metodo: 'PATCH', cuerpo: { activo } }),
+  // RF019: devuelve { url } para agregarla a la galería del servicio
+  subirImagen: (archivo) => api('/api/oferta/prestador/imagenes', { metodo: 'POST', cuerpo: conArchivo(archivo) }),
 
   // Reseñas: públicas (RF080, RF081) y las que recibe el prestador (RF030)
   calificaciones: (id, filtros) => api(`/api/oferta/servicios/${id}/calificaciones?${aQuery(filtros)}`),
@@ -109,4 +134,9 @@ export const reservasApi = {
   abrirFechas: (idServicio, datos) =>
     api(`/api/reservas/prestador/servicios/${idServicio}/disponibilidad`, { metodo: 'POST', cuerpo: datos }),
   cambiarFecha: (id, activo) => api(`/api/reservas/prestador/disponibilidad/${id}`, { metodo: 'PATCH', cuerpo: { activo } }),
+
+  // RF037 y RF039: alertas internas (la campana)
+  notificaciones: () => api('/api/reservas/notificaciones'),
+  marcarLeidas: () => api('/api/reservas/notificaciones/leidas', { metodo: 'POST' }),
+  marcarLeida: (id) => api(`/api/reservas/notificaciones/${id}/leida`, { metodo: 'POST' }),
 }

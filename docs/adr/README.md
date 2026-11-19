@@ -1,7 +1,8 @@
 # Registro de decisiones arquitectónicas (ADR)
 
-ADR-01 a ADR-04 vienen de los entregables 1 y 2 (RUP, PostgreSQL, REST, microservicios).
-Estas son las decisiones que se tomaron al empezar la construcción.
+ADR-01 a ADR-04 vienen del primer entregable (RUP, PostgreSQL, REST con webhooks firmados y pago con
+Wompi): están en [03_arquitectura](../03_arquitectura/decisiones-arquitectonicas.md). La arquitectura de
+microservicios se decidió en el segundo entregable. Estas son las decisiones que se tomaron al empezar la construcción.
 
 ## ADR-05: Monorepo con un proyecto Maven por microservicio
 
@@ -147,3 +148,21 @@ Estas son las decisiones que se tomaron al empezar la construcción.
   promedio de cada servicio coinciden con sus calificaciones. El bloqueo solo serializa calificaciones
   del **mismo** servicio, que son pocas por minuto. Las reseñas son públicas con el autor abreviado
   ("Ana T."), y el prestador responde en público (RF030).
+
+## ADR-15: Las imágenes subidas se guardan en PostgreSQL
+
+- **Estado:** Aceptada.
+- **Contexto:** RF019 pide que el prestador suba imágenes JPEG o PNG con un tamaño máximo, y RF008 una foto
+  de perfil. Hasta ahora solo se registraban URLs externas. Las opciones eran un almacenamiento de objetos
+  (S3 o similar), una carpeta en el servidor o la base de datos.
+- **Decisión:** Cada servicio guarda sus propias imágenes en su base: oferta en `imagen_archivo` y cuentas
+  en `foto_perfil`, en tablas aparte para no leer los bytes cada vez que se consulta un servicio o un
+  usuario. Máximo 2 MB por archivo, y el tipo se reconoce por los primeros bytes del archivo, no por el
+  nombre ni por lo que declara el navegador. Las imágenes del catálogo son públicas
+  (`GET /api/oferta/imagenes/{id}`) y se sirven con caché de un año porque nunca cambian: una imagen
+  nueva es otro id. Quitar una imagen de la galería elimina el archivo si ningún otro servicio la usa.
+  La foto de perfil exige sesión.
+- **Consecuencia:** No hace falta otra pieza de infraestructura, y el respaldo diario (`pg_dump`) incluye
+  las imágenes. A cambio, la base crece con los archivos: con el tope de 300 imágenes por prestador es
+  aceptable para este proyecto. Si el volumen creciera mucho, las imágenes pasarían a un almacenamiento de
+  objetos, y solo cambiaría el servicio que las guarda, no las URLs que usan el frontend y la galería.

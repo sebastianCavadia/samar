@@ -6,6 +6,20 @@ de la red de Docker: las usan los servicios entre ellos y no se pueden llamar de
 Las rutas que no son públicas exigen la cabecera `Authorization: Bearer <token>`. El token se obtiene
 al iniciar sesión.
 
+## Documentación interactiva (Swagger)
+
+Cada servicio publica su especificación OpenAPI a través del gateway (RNF-034). Con el sistema levantado:
+
+| Servicio | Swagger |
+|---|---|
+| cuentas-service | `/docs/cuentas/swagger-ui/index.html` |
+| oferta-service | `/docs/oferta/swagger-ui/index.html` |
+| reservas-service | `/docs/reservas/swagger-ui/index.html` |
+
+En local, con el prefijo `http://localhost:8080`; en producción, con el dominio. Para probar rutas
+protegidas desde Swagger, inicia sesión con `POST /api/cuentas/auth/login`, copia el token y pégalo en
+**Authorize**. Las rutas `/internal/**` no aparecen ni se pueden alcanzar por `/docs`.
+
 ## cuentas-service
 
 | Método y ruta | Quién | Qué hace |
@@ -13,7 +27,10 @@ al iniciar sesión.
 | `POST /api/cuentas/auth/registro/turista` | Público | Registro de turista (RF001) |
 | `POST /api/cuentas/auth/registro/prestador` | Público | Registro de prestador; queda pendiente de validación (RF003) |
 | `POST /api/cuentas/auth/login` `{correo, password}` | Público | Devuelve el JWT; bloqueo tras 5 intentos fallidos (RF004-RF006) |
-| `GET /api/cuentas/perfil` | Con sesión | Datos del usuario que inició sesión |
+| `GET /api/cuentas/perfil` | Con sesión | Datos del usuario que inició sesión (incluye `tieneFoto`) |
+| `PUT /api/cuentas/perfil` `{nombre, telefono, direccion, zona}` | Con sesión | Editar el perfil; dirección y zona solo para prestadores (RF008) |
+| `PUT /api/cuentas/perfil/password` `{actual, nueva}` | Con sesión | Cambiar la contraseña; exige la actual (RF009) |
+| `PUT` · `GET` · `DELETE /api/cuentas/perfil/foto` | Con sesión | Subir (multipart, campo `archivo`, JPEG o PNG hasta 2 MB), ver o quitar la foto de perfil (RF008) |
 | `/api/cuentas/admin/...` | Administrador | Validar prestadores, buscar y gestionar usuarios, crear administradores, bitácora (RF091-RF100) |
 
 Ejemplo con curl, contra el compose de desarrollo:
@@ -30,7 +47,9 @@ curl localhost:8080/api/cuentas/perfil -H "Authorization: Bearer <token>"
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `GET /api/oferta/servicios?q&tipo&categoria&zona&precioMin&precioMax&calificacionMin&accesible&orden&pagina` | Público | Buscar/listar, 10 por página. `orden`: `recientes`, `precio_asc`, `precio_desc`, `calificacion` |
+| `GET /api/oferta/servicios?q&tipo&categoria&zona&precioMin&precioMax&calificacionMin&accesible&dieta&orden&pagina` | Público | Buscar/listar, 10 por página. `orden`: `recientes`, `precio_asc`, `precio_desc`, `calificacion`. `dieta` (RF079): `VEGETARIANA`, `VEGANA`, `CELIACA`, `KOSHER` o `HALAL`, solo restaurantes |
+| `POST /api/oferta/prestador/imagenes` | Prestador | Subir una imagen (multipart, campo `archivo`, JPEG o PNG hasta 2 MB). Devuelve la `url` para la galería (RF019) |
+| `GET /api/oferta/imagenes/{id}` | Público | La imagen, con caché de un año (ADR-15). Quitarla de la galería al editar el servicio la elimina |
 | `GET /api/oferta/servicios/{id}` | Público | Detalle (solo activos) |
 | `POST /api/oferta/prestador/servicios` | Prestador validado | Registrar (con bloque `hospedaje`, `actividad` o `gastronomico` según `tipo`) |
 | `PUT /api/oferta/prestador/servicios/{id}` | Dueño | Editar (el tipo no cambia) |
@@ -56,6 +75,8 @@ curl localhost:8080/api/cuentas/perfil -H "Authorization: Bearer <token>"
 | `POST /api/reservas/prestador/reservas/{id}/confirmar` · `/rechazar` · `/pago {aprobado}` | Prestador dueño | Confirmar (solo con pago aprobado), rechazar, revisar comprobante |
 | `GET`/`POST /api/reservas/prestador/servicios/{id}/disponibilidad` | Prestador dueño | Ver o abrir cupos por rango de fechas y días de la semana |
 | `PATCH /api/reservas/prestador/disponibilidad/{id}` `{activo}` | Prestador dueño | Bloquear o desbloquear una fecha |
+| `GET /api/reservas/notificaciones` | Con sesión | Las 20 alertas más recientes y cuántas no se han leído (RF037, RF039) |
+| `POST /api/reservas/notificaciones/leidas` · `/{id}/leida` | Con sesión | Marcar todas, o una propia, como leídas |
 
 Ciclo de vida (RF048): `PENDIENTE → CONFIRMADA → COMPLETADA`, o `PENDIENTE → RECHAZADA/CANCELADA`, o
 `CONFIRMADA → CANCELADA`. Cada minuto una tarea cancela las pendientes sin pago tras 15 min (RF056) y
@@ -74,4 +95,5 @@ Todas las respuestas de error usan el formato estándar `ProblemDetail` (RFC 780
 | 403 | El usuario no tiene permiso para esa operación |
 | 404 | El recurso no existe |
 | 409 | Una regla de negocio lo impide (sin cupos, ya calificada, estado no permitido...) |
+| 413 | El archivo supera los 2 MB |
 | 503 | Otro microservicio no respondió a tiempo |

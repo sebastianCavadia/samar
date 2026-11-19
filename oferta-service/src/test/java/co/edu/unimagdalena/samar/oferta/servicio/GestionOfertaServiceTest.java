@@ -43,7 +43,7 @@ class GestionOfertaServiceTest {
     repo = mock(ServicioTuristicoRepository.class);
     cuentas = mock(CuentasClient.class);
     when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    servicio = new GestionOfertaService(repo, cuentas,
+    servicio = new GestionOfertaService(repo, cuentas, mock(ImagenService.class),
         Clock.fixed(Instant.parse("2026-11-01T12:00:00Z"), ZoneOffset.UTC));
   }
 

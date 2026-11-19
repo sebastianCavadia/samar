@@ -105,7 +105,10 @@ verificar "bitacora general con area y motivo" 200 "len(d['contenido'])>=5 and a
 echo "=== Prestador desactivado: sus ofertas salen del catalogo (ADR-13) ==="
 llamar GET /api/cuentas/admin/usuarios?q=tours@demo.co "$TA"; TOURS=$(campo "d['contenido'][0]['id']")
 llamar GET "/api/oferta/servicios?q=tour%20minca" ""; ANTES=$(campo "d['totalElementos']")
-DISP=$(llamar GET "/api/reservas/disponibilidad?servicio=2" ""; campo "d[0]['id']")
+# Se abre una fecha propia: las del seed pueden haber pasado, y sin fecha no habría qué intentar reservar.
+FECHA=$(date -d "+6 day" +%F)
+llamar POST /api/reservas/prestador/servicios/2/disponibilidad "$TP" "{\"desde\":\"$FECHA\",\"hasta\":\"$FECHA\",\"cupos\":5}"
+DISP=$(llamar GET "/api/reservas/disponibilidad?servicio=2&desde=$FECHA&hasta=$FECHA" ""; campo "d[0]['id']")
 llamar POST "/api/cuentas/admin/usuarios/$TOURS/estado" "$TA" '{"estado":"INACTIVO","motivo":"Documentacion vencida"}'
 verificar "desactivar al prestador tours" 200
 esperar_catalogo "d['totalElementos']==0"

@@ -31,7 +31,8 @@ public record ServicioRequest(
     @Valid GastronomicoDatos gastronomico) {
 
   public record ImagenDatos(
-      @NotBlank @Size(max = 500) @Pattern(regexp = "https?://.+") String url,
+      // URL externa o una imagen subida a SAMAR (RF019)
+      @NotBlank @Size(max = 500) @Pattern(regexp = "https?://.+|/api/oferta/imagenes/\\d+") String url,
       @NotBlank @Size(max = 200) String descripcion) {
   }
 

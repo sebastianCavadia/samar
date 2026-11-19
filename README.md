@@ -62,14 +62,14 @@ Administrador en desarrollo: `admin@samar.co` / `Admin12345`.
 
 | Módulo | Estado |
 |---|---|
-| Cuentas: registro, inicio de sesión con bloqueo, panel del administrador | Listo |
-| Oferta: publicar y editar servicios, catálogo con búsqueda y filtros | Listo |
-| Reservas: cupos por fecha, reservar, pagar (simulado), confirmar, cancelar, estados automáticos | Listo |
+| Cuentas: registro, inicio de sesión con bloqueo, perfil con foto y cambio de contraseña, panel del administrador | Listo |
+| Oferta: publicar y editar servicios con galería de imágenes, catálogo con búsqueda, filtros (incluida dieta) y búsquedas recientes | Listo |
+| Reservas: cupos por fecha, reservar, pagar (simulado), confirmar, cancelar, estados automáticos, notificaciones en la app | Listo |
 | Calificaciones: reseñas de 1 a 5 estrellas y respuesta del prestador | Listo |
 | Recomendaciones con IA | Estructura lista, falta la lógica |
 
 Pendientes principales: recomendaciones con IA (RF067-RF072), pasarela de pago real, envío real de
-correos, política de cancelación (RF042), impuestos y comisión (RF046), reportes (RF086-RF090) e
+correos (las notificaciones hoy son alertas dentro de la app), política de cancelación (RF042), impuestos y comisión (RF046), reportes (RF086-RF090) e
 invalidar tokens al desactivar una cuenta (RF012).
 
 ## Documentación
@@ -81,9 +81,9 @@ Todo está en [docs/](docs/README.md), organizado por fases de RUP.
 | [Índice de documentación](docs/README.md) | Entregables, requisitos, casos de uso, diagramas y diseño |
 | [Requisitos funcionales v3](docs/02_requisitos/requisitos_funcionales_SAMAR_v3.md) | RF001 a RF100 |
 | [Decisiones de arquitectura](docs/adr/README.md) | ADR-05 a 14 (las ADR-01 a 04 están en [03_arquitectura](docs/03_arquitectura/decisiones-arquitectonicas.md)) |
-| [API REST](docs/api.md) | Rutas de cada servicio |
+| [API REST](docs/api.md) | Rutas de cada servicio; Swagger en `/docs/{cuentas,oferta,reservas}/swagger-ui/index.html` |
 | [Guía de desarrollo](docs/desarrollo.md) | Capas y cómo agregar una funcionalidad |
-| [Pruebas](docs/pruebas.md) | Unitarias, de arquitectura y de punta a punta |
+| [Pruebas](docs/pruebas.md) | Unitarias, de arquitectura, de punta a punta y de carga (k6) |
 | [Despliegue](docs/despliegue.md) | Servidor, HTTPS y cómo publicar cambios |
 
 ## Estructura del repositorio

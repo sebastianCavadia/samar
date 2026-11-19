@@ -58,4 +58,12 @@ public final class Respuestas {
       PagoInfo pago,
       List<EventoBitacora> historial) {
   }
+
+  /** RF037 y RF039: una alerta interna. */
+  public record NotificacionInfo(Long id, String asunto, String mensaje, boolean leida, Instant creadoEn) {
+  }
+
+  /** Las 20 más recientes y cuántas faltan por leer (el número de la campana). */
+  public record Notificaciones(long noLeidas, List<NotificacionInfo> recientes) {
+  }
 }

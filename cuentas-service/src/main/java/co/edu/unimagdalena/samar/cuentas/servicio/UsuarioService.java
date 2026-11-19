@@ -1,6 +1,7 @@
 package co.edu.unimagdalena.samar.cuentas.servicio;
 
 import co.edu.unimagdalena.samar.cuentas.modelo.EstadoCuenta;
+import co.edu.unimagdalena.samar.cuentas.persistencia.FotoPerfilRepository;
 import co.edu.unimagdalena.samar.cuentas.persistencia.PrestadorRepository;
 import co.edu.unimagdalena.samar.cuentas.persistencia.UsuarioRepository;
 import co.edu.unimagdalena.samar.cuentas.servicio.dto.Identidad;
@@ -17,16 +18,20 @@ public class UsuarioService {
 
   private final UsuarioRepository usuarios;
   private final PrestadorRepository prestadores;
+  private final FotoPerfilRepository fotos;
 
-  public UsuarioService(UsuarioRepository usuarios, PrestadorRepository prestadores) {
+  public UsuarioService(UsuarioRepository usuarios, PrestadorRepository prestadores, FotoPerfilRepository fotos) {
     this.usuarios = usuarios;
     this.prestadores = prestadores;
+    this.fotos = fotos;
   }
 
   /** RF008 (consulta): perfil del usuario autenticado. */
   @Transactional(readOnly = true)
   public UsuarioResponse perfil(Identidad actor) {
-    return consultarPorId(actor.usuarioId());
+    return usuarios.findById(actor.usuarioId())
+        .map(u -> UsuarioMapper.aResponse(u, fotos.existsById(u.getId())))
+        .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
   }
 
   /** Para oferta y reservas: datos de un usuario (validación del prestador, fecha de nacimiento...). */

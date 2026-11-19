@@ -2,7 +2,8 @@ package co.edu.unimagdalena.samar.reservas.integracion;
 
 /**
  * Avisos al turista o al prestador (RF037, RF039). La capa servicio depende de esta
- * interfaz; la implementación real (correo SMTP o alertas internas) se cambia sin tocarla.
+ * interfaz; hoy la implementa NotificacionService con alertas internas, y un envío por correo
+ * se agregaría como otra implementación sin tocar las reglas de negocio.
  */
 public interface Notificador {
 
